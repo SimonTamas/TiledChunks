@@ -13,7 +13,7 @@
         layers: TiledChunks.ChunkLayer[];
         container: Phaser.Group;
         static chunks: number = 0;
-
+        colliders: Phaser.Sprite[];
 
         /*
             When a camera enters a new chunk
@@ -78,8 +78,6 @@
 
 
         public ActivateAdjacent(): void {
-            if (!this.adjacentChunks)
-                this.CacheAdjacentChunks(this.map.data.chunkNeedCacheHorizontal, this.map.data.chunkNeedCacheVertical);
             for (var a: number = 0; a < this.adjacentChunks.length; a++)
                 this.adjacentChunks[a].Activate();
         }
@@ -290,6 +288,28 @@
             }
         }
 
+
+        public AddColliders(_chunkLayer: TiledChunks.ChunkLayer): void {
+            var collisionX: number;
+            var collisionY: number;
+            var rect: Phaser.Sprite;
+            for (var r: number = 0; r < _chunkLayer.tiles.length; r++) {
+                if (_chunkLayer.tiles[r]) {
+                    for (var c: number = 0; c < _chunkLayer.tiles[r].length; c++) {
+                        if (_chunkLayer.tiles[r][c] && _chunkLayer.tiles[r][c].data.id != _chunkLayer.layer.emptyID) {
+                            collisionX = _chunkLayer.chunk.x + ( c * this.map.data.tileWidth);
+                            collisionY = _chunkLayer.chunk.y + (r * this.map.data.tileHeight);
+                            rect = new Phaser.Sprite(this.map.game, collisionX, collisionY);
+                            this.map.game.physics.enable(rect, Phaser.Physics.ARCADE);
+                            rect.body.setSize(this.map.data.tileWidth, this.map.data.tileHeight, 0, 0);
+                            rect.body.immovable = true;
+                            this.colliders.push(rect);
+                        }
+                    }
+                }
+            }
+        }
+
         constructor(_map: TiledChunks.Map, _row: number, _column: number)
         {
 
@@ -297,7 +317,7 @@
             this.map = _map;
             this.row = _row;
             this.column = _column;
-
+            this.colliders = [];
             this.x = this.column * this.map.data.chunkWidth;
             this.y = this.row * this.map.data.chunkHeight;
 
@@ -314,36 +334,16 @@
                 if (!layerData.isCollisionLayer)
                     this.layers.push(layerData.GetChunkLayer(this));
                 else
-                    hasCollisionLayer = true;
+                    this.AddColliders(layerData.GetChunkLayer(this));
             }
 
-            // If a collision layer was added then we must make tiles 
-            // on the collision layers connection -> arcade bodies
-            if (hasCollisionLayer)
-            {
-                for (var l: number = 0; l < this.map.data.layers.length; l++)
-                {
-                    layerData = this.map.data.layers[l];
-                    if (layerData.isCollisionLayer)
-                    {
-                        // Search for the layer it connects to
-                        var connectionLayerData: TiledChunks.LayerData;
-                        for (var f: number = 0; f < this.map.data.layers.length; f++)
-                        {
-                            connectionLayerData = this.map.data.layers[f];
-                            if (connectionLayerData.name == layerData.collisionConnection)
-                                connectionLayerData.linkedCollisionLayer = layerData;
-                        }
-                        connectionLayerData = null;
-                    }
-                }
-            }
+           
 
             // Nullify localizations
             // for garbage collection
             layerData = null;
             hasCollisionLayer = null;
-
+            
             Chunk.chunks++;
         }
 

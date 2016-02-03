@@ -4,9 +4,7 @@
         name: string;
         emptyID: number;
         tileDatas: TiledChunks.TileData[][];
-        linkedCollisionLayer: TiledChunks.LayerData;
         isCollisionLayer: boolean;
-        collisionConnection: string;
 
 
         // Convert two dimension list of tile IDs ( from Tiled )
@@ -19,7 +17,7 @@
                 for (var c: number = 0; c < _tileList[r].length; c++) {
                     id = _tileList[r][c];
                     if (id != this.emptyID)
-                        this.tileDatas[r][c] = new TiledChunks.TileData(id, this.isCollisionLayer);
+                        this.tileDatas[r][c] = new TiledChunks.TileData(id);
                 }
             }
             id = null;
@@ -40,7 +38,7 @@
                         if (this.tileDatas[tileRow] && this.tileDatas[tileRow][tileColumn]) {
                             id = this.tileDatas[tileRow][tileColumn].id;
                             if (id != this.emptyID)
-                                chunkTileDatas[rowOffset][columnOffset] = new TiledChunks.TileData(id, this.linkedCollisionLayer && this.linkedCollisionLayer.tileDatas[tileRow] && this.linkedCollisionLayer.tileDatas[tileRow][tileColumn] && this.linkedCollisionLayer.tileDatas[tileRow][tileColumn].collides);
+                                chunkTileDatas[rowOffset][columnOffset] = new TiledChunks.TileData(id);
                             else
                                 chunkTileDatas[rowOffset][columnOffset] = null;
                         }
@@ -53,13 +51,11 @@
             return new ChunkLayer(_chunk, this, chunkTileDatas);
         }
 
-        constructor(_name: string, _emptyID?: number, _collision?: boolean, _placeCollisionOnLayerName?: string)
+        constructor(_name: string, _emptyID?: number, _collision?: boolean)
         {
             this.name = _name;
             this.emptyID = _emptyID || 0;
             this.isCollisionLayer = _collision || false;
-            if (this.isCollisionLayer)
-                this.collisionConnection = _placeCollisionOnLayerName;
         }
         
     }

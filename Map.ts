@@ -62,13 +62,9 @@
         }
 
         public UpdateCollisionOnChunk(_chunk: TiledChunks.Chunk): void {
-            for (var i: number = 0; i < this.colliders.length; i++) {
-                for (var c: number = 0; c < _chunk.layers.length; c++) {
-                    for (var v = 0; v < _chunk.layers[c].colliders.length; v++) {
-                        this.game.physics.arcade.collide(this.colliders[i], _chunk.layers[c].colliders[v].tile);
-                    }
-                }
-            }
+            for (var i: number = 0; i < this.colliders.length; i++) 
+                for (var c: number = 0; c < _chunk.colliders.length; c++)
+                    this.game.physics.arcade.collide(this.colliders[i], _chunk.colliders[c]);
         }
 
         public UpdateCollisions(): void 
@@ -140,7 +136,7 @@
             // Each chunk has adjacent chunks 
             // around it, we cache them so
             // we dont have to calculate it later
-            //this.CacheAdjacentChunks();
+            this.CacheAdjacentChunks();
 
             this.UpdateMap();
 

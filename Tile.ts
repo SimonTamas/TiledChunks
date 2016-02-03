@@ -25,15 +25,10 @@
 
             this.tile = new Phaser.Sprite(this.chunkLayer.chunk.map.game, tileX, tileY);
             
+            
             this.data.textureFrame = this.chunkLayer.chunk.map.data.GetFrameForId(this.data.id); 
             this.data.textureKey = this.chunkLayer.chunk.map.data.GetTextureKeyForId(this.data.id);
-
-            if (this.data.collides) {
-                this.chunkLayer.chunk.map.game.physics.enable(this.tile, Phaser.Physics.ARCADE);
-                this.tile.body.collideWorldBounds = true;
-                this.tile.body.immovable = true;
-                this.chunkLayer.colliders.push(this);
-            }
+            
 
             this.tile.loadTexture(this.data.textureKey, this.data.textureFrame);
             

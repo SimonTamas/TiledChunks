@@ -8,7 +8,6 @@
         tiles: TiledChunks.Tile[][];
         drawn: boolean;
         container: Phaser.Group;
-        colliders: TiledChunks.Tile[];
 
         public DrawLayer():void {
             if (this.drawn)
@@ -46,7 +45,6 @@
             this.layer = _layer;
             this.mapLayer = this.chunk.map.GetLayer(this.layer.name)
             this.drawn = false;
-            this.colliders = [];
 
             // Store tiles in memory
             this.tiles = [];
