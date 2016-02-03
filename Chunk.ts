@@ -1,0 +1,247 @@
+﻿module TiledChunks {
+    export class Chunk
+    {
+        map: TiledChunks.Map;
+        row: number;
+        column: number;
+        x: number;
+        y: number;
+        active: boolean;
+        deactivating: boolean;
+        drawn: boolean;
+        coord: TiledChunks.ChunkCoord;
+        adjacentChunks: TiledChunks.Chunk[];
+        layers: TiledChunks.ChunkLayer[];
+        container: Phaser.Group;
+        static chunks: number = 0;
+
+
+        /*
+            When a camera enters a new chunk
+            we prepare to deactivate chunks
+        */
+        public PrematureDeactivation(): void
+	    {
+            this.deactivating = true;
+        }
+
+
+        /*
+            Once the correct chunks have been activated we
+            can deactivate the ones which didnt get activated
+        */
+	    public DeactivationCheck(): void
+        {
+            if (this.deactivating)
+                this.Deactivate();
+        }
+
+        /* ------------------------------------------------------------------------------------------ */
+        /* ----------------------------------- DRAWING AND ERASING ---------------------------------- */
+        /* ------------------------------------------------------------------------------------------ */
+        private DrawChunk(): void
+        {
+            if (this.drawn)
+                return;
+            this.drawn = true;
+            for (var l: number = 0; l < this.layers.length; l++) {
+                this.layers[l].DrawLayer();
+            }
+        }
+
+        private EraseChunk(): void {
+            if (this.drawn)
+            {
+                this.drawn = false;
+                for (var l: number = 0; l < this.layers.length; l++) {
+                    this.layers[l].EraseLayer();
+                }
+            }
+        }
+        /* ------------------------------------------------------------------------------------------ */
+        /* ----------------------------------- DRAWING AND ERASING ---------------------------------- 
+        /* ------------------------------------------------------------------------------------------ */
+
+        public Activate(): void {
+            this.deactivating = false;
+            if (!this.active) {
+                this.active = true;
+                this.DrawChunk();
+            }
+        }
+
+        public Deactivate(): void {
+            if (this.active) {
+                this.active = false;
+                this.EraseChunk();
+            }
+        }
+
+        public PlaceGameOnLayer(_object: Phaser.Sprite, _layer: string) :void {
+
+        }
+
+
+        public ActivateAdjacent(): void {
+            for (var a: number = 0; a < this.adjacentChunks.length; a++)
+                this.adjacentChunks[a].Activate();
+        }
+        
+
+        public GetAdjacentChunks(_depthX: number, _depthY: number, _source: TiledChunks.Chunk): TiledChunks.Chunk[] {
+            var returnChunks: TiledChunks.Chunk[] = [];
+            var addChunkCoords: TiledChunks.ChunkCoord[] = [];
+
+
+            var hasLeft: boolean = this.column - 1 >= 0;
+            var hasRight: boolean = this.column + 1 < this.map.data.chunkColumns;
+
+            if (this.row - 1 >= 0) {
+                // Above
+                if (hasLeft) {
+                    // Top-Left
+                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row - 1, this.column - 1));
+                }
+                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row - 1, this.column));
+                if (hasRight) {
+                    // Top-Right
+                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row - 1, this.column + 1));
+                }
+            }
+
+            // Left
+            if (hasLeft)
+                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row, this.column-1));
+
+            // Right
+            if (hasRight)
+                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row, this.column + 1));
+
+            if (this.row + 1 < this.map.data.chunkRows) {
+                // Bottom-Left
+                if (hasLeft)
+                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row+1, this.column-1));
+                // Bellow
+                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row + 1, this.column));
+                // Bottom-Right
+                if (hasRight)
+                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row+1, this.column+1));
+            }
+
+            var addingChunk: TiledChunks.Chunk;
+            var chekingCoord: TiledChunks.ChunkCoord;
+            var addingKey: string;
+            var outerChunk: TiledChunks.Chunk;
+            for (var c: number = 0; c < addChunkCoords.length;c++ )
+            {
+                chekingCoord = addChunkCoords[c];
+                addingChunk = this.map.chunks[chekingCoord.row][chekingCoord.column];
+                addingKey = chekingCoord.GetKey();
+
+
+                // Dont go back the way we came ( so we finish faster )
+                if (_source.coord.GetKey() != addingKey)
+                {
+                    var outerChunks: TiledChunks.Chunk[] = [];
+                    if (addingChunk.coord.row == this.coord.row && _depthX > 0)
+                        outerChunks = addingChunk.GetAdjacentChunks(_depthX - 1, _depthY, this);
+                    else if (addingChunk.coord.column == this.coord.column && _depthY > 0)
+                        outerChunks = addingChunk.GetAdjacentChunks(_depthX, _depthY - 1, this);
+                    
+
+                    for (var o: number = 0; o < outerChunks.length; o++) {
+                        outerChunk = outerChunks[o];
+                        if (!TiledChunks.Chunk.ChunkInChunkArray(outerChunk, returnChunks))
+                            returnChunks.push(outerChunk);
+                    }
+
+
+                }
+
+                if (!TiledChunks.Chunk.ChunkInChunkArray(addingChunk, returnChunks))
+                    returnChunks.push(addingChunk);
+            }
+
+            return returnChunks;
+        }
+
+        public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
+            this.adjacentChunks = this.GetAdjacentChunks(_depthX, _depthY, this);
+        }
+
+
+        public static ChunkInChunkArray(_chunk: TiledChunks.Chunk, _chunkArray: TiledChunks.Chunk[]) {
+            var i: number = 0;
+            while (i < _chunkArray.length && _chunkArray[i].coord.GetKey() != _chunk.coord.GetKey())
+                i++;
+            return i < _chunkArray.length;
+        }
+
+        public Update(): void {
+            if (this.active) {
+
+
+
+
+            }
+        }
+
+        constructor(_map: TiledChunks.Map, _row: number, _column: number)
+        {
+
+            // Store vars
+            this.map = _map;
+            this.row = _row;
+            this.column = _column;
+
+            this.x = this.column * this.map.data.chunkWidth;
+            this.y = this.row * this.map.data.chunkHeight;
+
+            // Easy way to keep track of the chunks
+            this.coord = new TiledChunks.ChunkCoord(this.row, this.column);
+            
+
+            // Create the layers
+            this.layers = [];
+            var layerData: TiledChunks.LayerData;
+            var hasCollisionLayer: boolean = false;
+            for (var l: number = 0; l < this.map.data.layers.length; l++) {
+                layerData = this.map.data.layers[l];
+                if (!layerData.isCollisionLayer)
+                    this.layers.push(layerData.GetChunkLayer(this));
+                else
+                    hasCollisionLayer = true;
+            }
+
+            // If a collision layer was added then we must make tiles 
+            // on the collision layers connection -> arcade bodies
+            if (hasCollisionLayer)
+            {
+                for (var l: number = 0; l < this.map.data.layers.length; l++)
+                {
+                    layerData = this.map.data.layers[l];
+                    if (layerData.isCollisionLayer)
+                    {
+                        // Search for the layer it connects to
+                        var connectionLayerData: TiledChunks.LayerData;
+                        for (var f: number = 0; f < this.map.data.layers.length; f++)
+                        {
+                            connectionLayerData = this.map.data.layers[f];
+                            if (connectionLayerData.name == layerData.collisionConnection)
+                                connectionLayerData.linkedCollisionLayer = layerData;
+                        }
+                        connectionLayerData = null;
+                    }
+                }
+            }
+
+            // Nullify localizations
+            // for garbage collection
+            layerData = null;
+            hasCollisionLayer = null;
+
+            Chunk.chunks++;
+        }
+
+    }
+}
