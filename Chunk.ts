@@ -1,5 +1,8 @@
 ﻿module TiledChunks {
     export class Chunk {
+
+        static chunks: number = 0;
+
         map: TiledChunks.Map;
         row: number;
         column: number;
@@ -11,8 +14,6 @@
         coord: TiledChunks.ChunkCoord;
         adjacentChunks: TiledChunks.Chunk[];
         layers: TiledChunks.ChunkLayer[];
-        container: Phaser.Group;
-        static chunks: number = 0;
         colliders: Phaser.Sprite[];
 
         /*
@@ -82,7 +83,8 @@
                 this.adjacentChunks[a].Activate();
         }
         
-        /*
+        /*  THIS ALGORITHM IS MORE PRECISE - BUT IT IS A LOT SLOWER !
+
         public GetAdjacentChunks(_depthX: number, _depthY: number, _source: TiledChunks.Chunk): TiledChunks.Chunk[] {
             var returnChunks: TiledChunks.Chunk[] = [];
             var addChunkCoords: TiledChunks.ChunkCoord[] = [];
@@ -162,6 +164,8 @@
         */
 
         /*
+            THIS ALGORITHM IS A LOT FASTER - 
+            BUT IN CERTAIN RESOLUTIONS IT MISSES CORNERS
 
             1 - UP & RIGHT
             2 - UP & LEFT
@@ -278,16 +282,7 @@
                 i++;
             return i < _chunkArray.length;
         }
-
-        public Update(): void {
-            if (this.active) {
-
-
-
-
-            }
-        }
-
+        
 
         public AddColliders(_chunkLayer: TiledChunks.ChunkLayer): void {
             var collisionX: number;

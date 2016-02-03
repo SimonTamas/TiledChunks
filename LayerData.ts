@@ -30,9 +30,9 @@
                 var id: number;
                 var tileRow: number;
                 var tileColumn: number;
-                for (var rowOffset = 0; rowOffset < _chunk.map.data.chunkTileRows; rowOffset++) {
+                for (var rowOffset: number = 0; rowOffset < _chunk.map.data.chunkTileRows; rowOffset++) {
                     chunkTileDatas[rowOffset] = [];
-                    for (var columnOffset = 0; columnOffset < _chunk.map.data.chunkTileColumns; columnOffset++) {
+                    for (var columnOffset:number = 0; columnOffset < _chunk.map.data.chunkTileColumns; columnOffset++) {
                         tileRow = (_chunk.row * _chunk.map.data.chunkTileRows) + rowOffset;
                         tileColumn = (_chunk.column * _chunk.map.data.chunkTileColumns) + columnOffset;
                         if (this.tileDatas[tileRow] && this.tileDatas[tileRow][tileColumn]) {
@@ -45,6 +45,7 @@
 
                     }
                 }
+                id = null;
                 tileRow = null;
                 tileColumn = null;
             }

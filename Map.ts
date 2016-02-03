@@ -119,8 +119,6 @@
                 layerGroup = new Phaser.Group(this.game, this.container, layerData.name);
                 this.layers.push(new TiledChunks.MapLayer(layerGroup, layerData));
             }
-            
-            
 
             // Create the Chunks
             this.chunks = [];
@@ -139,10 +137,9 @@
             this.CacheAdjacentChunks();
 
             this.UpdateMap();
-
-            console.log(this.container);
-            console.log("Chunks : " + Chunk.chunks);
-            console.log(Tile.tiles);
+            
+            console.log("Created chunks: " + Chunk.chunks);
+            console.log("Created tiles: " + Tile.tiles);
         }
     }
 }
