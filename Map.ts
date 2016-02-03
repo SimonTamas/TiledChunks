@@ -133,7 +133,7 @@
             // Each chunk has adjacent chunks 
             // around it, we cache them so
             // we dont have to calculate it later
-            this.CacheAdjacentChunks();
+            //this.CacheAdjacentChunks();
 
             this.UpdateMap();
 

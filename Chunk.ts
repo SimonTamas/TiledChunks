@@ -1,6 +1,5 @@
 ﻿module TiledChunks {
-    export class Chunk
-    {
+    export class Chunk {
         map: TiledChunks.Map;
         row: number;
         column: number;
@@ -20,8 +19,7 @@
             When a camera enters a new chunk
             we prepare to deactivate chunks
         */
-        public PrematureDeactivation(): void
-	    {
+        public PrematureDeactivation(): void {
             this.deactivating = true;
         }
 
@@ -30,8 +28,7 @@
             Once the correct chunks have been activated we
             can deactivate the ones which didnt get activated
         */
-	    public DeactivationCheck(): void
-        {
+        public DeactivationCheck(): void {
             if (this.deactivating)
                 this.Deactivate();
         }
@@ -39,8 +36,7 @@
         /* ------------------------------------------------------------------------------------------ */
         /* ----------------------------------- DRAWING AND ERASING ---------------------------------- */
         /* ------------------------------------------------------------------------------------------ */
-        private DrawChunk(): void
-        {
+        private DrawChunk(): void {
             if (this.drawn)
                 return;
             this.drawn = true;
@@ -50,8 +46,7 @@
         }
 
         private EraseChunk(): void {
-            if (this.drawn)
-            {
+            if (this.drawn) {
                 this.drawn = false;
                 for (var l: number = 0; l < this.layers.length; l++) {
                     this.layers[l].EraseLayer();
@@ -77,17 +72,19 @@
             }
         }
 
-        public PlaceGameOnLayer(_object: Phaser.Sprite, _layer: string) :void {
+        public PlaceGameOnLayer(_object: Phaser.Sprite, _layer: string): void {
 
         }
 
 
         public ActivateAdjacent(): void {
+            if (!this.adjacentChunks)
+                this.CacheAdjacentChunks(this.map.data.chunkNeedCacheHorizontal, this.map.data.chunkNeedCacheVertical);
             for (var a: number = 0; a < this.adjacentChunks.length; a++)
                 this.adjacentChunks[a].Activate();
         }
         
-
+        /*
         public GetAdjacentChunks(_depthX: number, _depthY: number, _source: TiledChunks.Chunk): TiledChunks.Chunk[] {
             var returnChunks: TiledChunks.Chunk[] = [];
             var addChunkCoords: TiledChunks.ChunkCoord[] = [];
@@ -164,9 +161,116 @@
 
             return returnChunks;
         }
+        */
+
+        /*
+
+            1 - UP & RIGHT
+            2 - UP & LEFT
+            3 - DOWN & LEFT
+            4 - DOWN * RIGHT
+        */
+
+        public static MergeChunks(_chunks: TiledChunks.Chunk[], _withChunks: TiledChunks.Chunk[]): TiledChunks.Chunk[] {
+            for (var c: number = 0; c < _withChunks.length; c++) {
+                if (!TiledChunks.Chunk.ChunkInChunkArray(_withChunks[c], _chunks))
+                {
+                    _chunks.push(_withChunks[c]);
+                }
+            }
+            return _chunks;
+        }
+        
+        public GetAdjacentChunks(_depthX: number, _depthY: number, _direction?:number): TiledChunks.Chunk[] {
+            
+
+            var adjacent: TiledChunks.Chunk[] = [];
+
+            // If this is being called recursivly
+            // then we have a direction we came from
+            if (_direction != null) {
+                switch (_direction) {
+                    case 1:
+                        // UP
+                        if (this.row - 1 >= 0) {
+                            adjacent.push(this.map.chunks[this.row - 1][this.column]);
+                            if (_depthY > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row - 1][this.column].GetAdjacentChunks(_depthX, _depthY - 1, _direction)));
+                        }
+                        // RIGHT
+                        if (this.column + 1 < this.map.data.chunkColumns) {
+                            adjacent.push(this.map.chunks[this.row][this.column + 1]);
+                            if (_depthX > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row][this.column+1].GetAdjacentChunks(_depthX -1, _depthY, _direction)));
+                        }
+                    break;
+
+                    case 2:
+                        // UP
+                        if (this.row - 1 >= 0) {
+                            adjacent.push(this.map.chunks[this.row - 1][this.column]);
+                            if (_depthY > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row - 1][this.column].GetAdjacentChunks(_depthX, _depthY - 1, _direction)));
+                        }
+                        // LEFT
+                        if (this.column - 1 >= 0) {
+                            adjacent.push(this.map.chunks[this.row][this.column - 1]);
+                            if (_depthX > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row][this.column - 1].GetAdjacentChunks(_depthX - 1, _depthY, _direction)));
+                        }
+                     break;
+
+                    case 3:
+                        // DOWN
+                        if (this.row + 1 < this.map.data.chunkRows) {
+                            adjacent.push(this.map.chunks[this.row + 1][this.column]);
+                            if (_depthY > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row + 1][this.column].GetAdjacentChunks(_depthX, _depthY - 1, _direction)));
+                        }
+                        // LEFT
+                        if (this.column - 1 >= 0) {
+                            adjacent.push(this.map.chunks[this.row][this.column - 1]);
+                            if (_depthX > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row][this.column - 1].GetAdjacentChunks(_depthX - 1, _depthY, _direction)));
+                        }
+                    break;
+
+                    case 4:
+                        // DOWN
+                        if (this.row + 1 < this.map.data.chunkRows) {
+                            adjacent.push(this.map.chunks[this.row + 1][this.column]);
+                            if (_depthY > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row + 1][this.column].GetAdjacentChunks(_depthX, _depthY - 1, _direction)));
+                        }
+                        // RIGHT
+                        if (this.column + 1 < this.map.data.chunkColumns) {
+                            adjacent.push(this.map.chunks[this.row][this.column + 1]);
+                            if (_depthX > 0)
+                                TiledChunks.Chunk.MergeChunks(adjacent, (this.map.chunks[this.row][this.column + 1].GetAdjacentChunks(_depthX - 1, _depthY, _direction)));
+                        }
+                    break;
+                }
+                if (_depthY > 0) {
+                    TiledChunks.Chunk.MergeChunks(adjacent, this.GetAdjacentChunks(_depthX, _depthY - 1, _direction))
+                }
+            }
+            else {
+                // This is the center chunk 
+                // lets go in 4 directions
+                for (var d: number = 1; d < 5; d++) {
+                    var chunksInDirection: TiledChunks.Chunk[] = this.GetAdjacentChunks(_depthX, _depthY, d);
+                    for (var c: number = 0; c < chunksInDirection.length; c++) {
+                        if (!TiledChunks.Chunk.ChunkInChunkArray(chunksInDirection[c], adjacent))
+                            adjacent.push(chunksInDirection[c]);
+                    }
+                }
+            }
+
+            return adjacent;
+        }
 
         public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
-            this.adjacentChunks = this.GetAdjacentChunks(_depthX, _depthY, this);
+            this.adjacentChunks = this.GetAdjacentChunks(_depthX, _depthY);
         }
 
 
