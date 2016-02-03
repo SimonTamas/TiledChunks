@@ -61,15 +61,22 @@
             }
         }
 
-
-        public UpdateCollisions(): void {
-
+        public UpdateCollisionOnChunk(_chunk: TiledChunks.Chunk): void {
             for (var i: number = 0; i < this.colliders.length; i++) {
-                for (var c: number = 0; c < this.centerChunk.layers.length; c++) {
-                    for (var v = 0; v < this.centerChunk.layers[c].colliders.length; v++) {
-                        this.game.physics.arcade.collide(this.colliders[i], this.centerChunk.layers[c].colliders[v].tile);
+                for (var c: number = 0; c < _chunk.layers.length; c++) {
+                    for (var v = 0; v < _chunk.layers[c].colliders.length; v++) {
+                        this.game.physics.arcade.collide(this.colliders[i], _chunk.layers[c].colliders[v].tile);
                     }
                 }
+            }
+        }
+
+        public UpdateCollisions(): void 
+        {
+            this.UpdateCollisionOnChunk(this.centerChunk);
+            for (var a: number = 0; a < this.centerChunk.adjacentChunks.length; a++)
+            {
+                this.UpdateCollisionOnChunk(this.centerChunk.adjacentChunks[a]);
             }
         }
 
