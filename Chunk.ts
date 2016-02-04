@@ -79,11 +79,25 @@
         }
 
         public ActivateAdjacent(): void {
+            if (!this.adjacentGraphicalChunks)
+                this.CacheAdjacentChunks(this.map.data.chunkNeedCacheHorizontal, this.map.data.chunkNeedCacheVertical);
             for (var a: number = 0; a < this.adjacentGraphicalChunks.length; a++)
                 this.adjacentGraphicalChunks[a].Activate();
         }
         
-        
+
+        public CacheAdjacentGraphicalChunks(_depthX: number, _depthY: number): void {
+            this.adjacentGraphicalChunks = this.GetAdjacentChunks(_depthX, _depthY);
+        }
+
+        public CacheAdjacentCollisionChunks(): void {
+            this.adjacentCollisionChunks = this.GetAdjacentChunks(0, 0);
+        }
+
+        public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
+            this.CacheAdjacentGraphicalChunks(_depthX, _depthY);
+            this.CacheAdjacentCollisionChunks();
+        }
 
         /*
             1 - UP & RIGHT
@@ -211,15 +225,7 @@
 
             return adjacent;
         }
-
-        public CacheAdjacentGraphicalChunks(_depthX: number, _depthY: number): void {
-            this.adjacentGraphicalChunks = this.GetAdjacentChunks(_depthX, _depthY);
-        }
-
-        public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
-            this.CacheAdjacentGraphicalChunks(_depthX, _depthY);
-            this.adjacentCollisionChunks = this.GetAdjacentChunks(0, 0);
-        }
+        
 
 
         public static ChunkInChunkArray(_chunk: TiledChunks.Chunk, _chunkArray: TiledChunks.Chunk[]) {

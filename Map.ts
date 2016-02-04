@@ -7,7 +7,6 @@
         data: TiledChunks.MapData;
         chunks: TiledChunks.Chunk[][];
         
-
         centerChunk: TiledChunks.Chunk;
         cameraChunkRow: number;
         cameraChunkColumn: number;
@@ -99,6 +98,7 @@
                     this.chunks[r][c].CacheAdjacentChunks(this.data.chunkNeedCacheHorizontal, this.data.chunkNeedCacheVertical);
                 }
             }
+            this.OutputCachedChunks();
         }
 
         /*
@@ -116,6 +116,62 @@
             this.CacheAdjacentChunks();
         }
 
+
+        public LoadCachedChunks(_cacheNowIfNotFound: boolean): void {
+
+            var ref = this;
+            var jsonLoader: Phaser.Loader = new Phaser.Loader(this.game);
+            jsonLoader.json("adjacentChunksCache", "assets/adjacent_caches/" + this.data.viewportWidth + "x" + this.data.viewportHeight + "x" + this.data.chunkNeedCacheHorizontal + "x" + this.data.chunkNeedCacheVertical + "x" + this.data.chunkTileRows + "x" + this.data.chunkTileColumns + ".json");
+            jsonLoader.onLoadComplete.addOnce(function () {
+                var cacheJSON: JSON = this.game.cache.getJSON("adjacentChunksCache");
+                if (cacheJSON) {
+                    var adjacentChunksCache: number[][][] = cacheJSON["chunks"];
+                    for (var r: number = 0; r < adjacentChunksCache.length; r++) {
+                        for (var c: number = 0; c < adjacentChunksCache[r].length; c++) {
+                            ref.chunks[r][c].adjacentGraphicalChunks = [];
+                            ref.chunks[r][c].CacheAdjacentCollisionChunks();
+                            for (var a: number = 0; a < adjacentChunksCache[r][c].length; a++) {
+                                ref.chunks[r][c].adjacentGraphicalChunks.push(ref.chunks[adjacentChunksCache[r][c][a][0]][adjacentChunksCache[r][c][a][1]]);
+                            }
+                        }
+                    }
+                }
+                else {
+                    console.log("Could not find cached ajdacent chunks JSON");
+                    if (_cacheNowIfNotFound)
+                        ref.CacheAdjacentChunks();
+                }
+            }, this);
+            jsonLoader.start();
+
+        }
+
+        public OutputCachedChunks(): void {
+            var output: string = "{ \"chunkTileRows\": " + this.data.chunkTileRows + ", \"chunkTileColumns\": " + this.data.chunkTileColumns + ", \"chunks\":[";
+            var chunk: TiledChunks.Chunk;
+            var adjacentChunk: TiledChunks.Chunk;
+            for (var r: number = 0; r < this.chunks.length; r++) {
+                output += "[";
+                for (var c: number = 0; c < this.chunks[r].length; c++) {
+                    chunk = this.chunks[r][c];
+                    output += "[";
+                    for (var a: number = 0; a < chunk.adjacentGraphicalChunks.length; a++) {
+                        adjacentChunk = chunk.adjacentGraphicalChunks[a];
+                        output += "[" + adjacentChunk.coord.row + "," + adjacentChunk.coord.column + "]";
+                        if (a + 1 < chunk.adjacentGraphicalChunks.length)
+                            output += ",";
+                    }
+                    output += "]";
+                    if (c + 1 < this.chunks[r].length)
+                        output += ",";
+                }
+                output += "]";
+                if (r + 1 < this.chunks.length)
+                    output += ",";
+            }
+            prompt("Adjacent Chunks CACHE",output + "]}");
+        }
+
         constructor(_game: Phaser.Game, _data: TiledChunks.MapData)
         {
             this.game = _game;
@@ -124,6 +180,9 @@
             this.colliders = [];
             this.collisionChecks = 0;
             this.chunksDrawn = 0;
+
+
+
             // Create a group for each layer
             this.layers = [];
             var layerGroup: Phaser.Group;
@@ -149,9 +208,11 @@
             // Each chunk has adjacent chunks 
             // around it, we cache them so
             // we dont have to calculate it later
-            this.CacheAdjacentChunks();
 
+            this.LoadCachedChunks(false);
             this.UpdateMap();
+
+            
             
             console.log("Created chunks: " + Chunk.chunks);
             console.log("Created tiles: " + Tile.tiles);
