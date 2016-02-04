@@ -12,7 +12,10 @@
         deactivating: boolean;
         drawn: boolean;
         coord: TiledChunks.ChunkCoord;
-        adjacentChunks: TiledChunks.Chunk[];
+
+        adjacentGraphicalChunks: TiledChunks.Chunk[];
+        adjacentCollisionChunks: TiledChunks.Chunk[];
+
         layers: TiledChunks.ChunkLayer[];
         colliders: Phaser.Sprite[];
 
@@ -79,89 +82,11 @@
 
 
         public ActivateAdjacent(): void {
-            for (var a: number = 0; a < this.adjacentChunks.length; a++)
-                this.adjacentChunks[a].Activate();
+            for (var a: number = 0; a < this.adjacentGraphicalChunks.length; a++)
+                this.adjacentGraphicalChunks[a].Activate();
         }
         
-        /*  THIS ALGORITHM IS MORE PRECISE - BUT IT IS A LOT SLOWER !
-
-        public GetAdjacentChunks(_depthX: number, _depthY: number, _source: TiledChunks.Chunk): TiledChunks.Chunk[] {
-            var returnChunks: TiledChunks.Chunk[] = [];
-            var addChunkCoords: TiledChunks.ChunkCoord[] = [];
-
-
-            var hasLeft: boolean = this.column - 1 >= 0;
-            var hasRight: boolean = this.column + 1 < this.map.data.chunkColumns;
-
-            if (this.row - 1 >= 0) {
-                // Above
-                if (hasLeft) {
-                    // Top-Left
-                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row - 1, this.column - 1));
-                }
-                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row - 1, this.column));
-                if (hasRight) {
-                    // Top-Right
-                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row - 1, this.column + 1));
-                }
-            }
-
-            // Left
-            if (hasLeft)
-                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row, this.column-1));
-
-            // Right
-            if (hasRight)
-                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row, this.column + 1));
-
-            if (this.row + 1 < this.map.data.chunkRows) {
-                // Bottom-Left
-                if (hasLeft)
-                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row+1, this.column-1));
-                // Bellow
-                addChunkCoords.push(new TiledChunks.ChunkCoord(this.row + 1, this.column));
-                // Bottom-Right
-                if (hasRight)
-                    addChunkCoords.push(new TiledChunks.ChunkCoord(this.row+1, this.column+1));
-            }
-
-            var addingChunk: TiledChunks.Chunk;
-            var chekingCoord: TiledChunks.ChunkCoord;
-            var addingKey: string;
-            var outerChunk: TiledChunks.Chunk;
-            for (var c: number = 0; c < addChunkCoords.length;c++ )
-            {
-                chekingCoord = addChunkCoords[c];
-                addingChunk = this.map.chunks[chekingCoord.row][chekingCoord.column];
-                addingKey = chekingCoord.GetKey();
-
-
-                // Dont go back the way we came ( so we finish faster )
-                if (_source.coord.GetKey() != addingKey)
-                {
-                    var outerChunks: TiledChunks.Chunk[] = [];
-                    if (addingChunk.coord.row == this.coord.row && _depthX > 0)
-                        outerChunks = addingChunk.GetAdjacentChunks(_depthX - 1, _depthY, this);
-                    else if (addingChunk.coord.column == this.coord.column && _depthY > 0)
-                        outerChunks = addingChunk.GetAdjacentChunks(_depthX, _depthY - 1, this);
-                    
-
-                    for (var o: number = 0; o < outerChunks.length; o++) {
-                        outerChunk = outerChunks[o];
-                        if (!TiledChunks.Chunk.ChunkInChunkArray(outerChunk, returnChunks))
-                            returnChunks.push(outerChunk);
-                    }
-
-
-                }
-
-                if (!TiledChunks.Chunk.ChunkInChunkArray(addingChunk, returnChunks))
-                    returnChunks.push(addingChunk);
-            }
-
-            return returnChunks;
-        }
-        */
+        
 
         /*
             THIS ALGORITHM IS A LOT FASTER - 
@@ -272,7 +197,8 @@
         }
 
         public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
-            this.adjacentChunks = this.GetAdjacentChunks(_depthX, _depthY);
+            this.adjacentGraphicalChunks = this.GetAdjacentChunks(_depthX, _depthY);
+            this.adjacentCollisionChunks = this.GetAdjacentChunks(0, 0);
         }
 
 

@@ -16,6 +16,7 @@
         layers: TiledChunks.MapLayer[];
         colliders: Phaser.Sprite[];
 
+        collisionChecks: number;
 
         public AddListener(_event: string, _callback: Object): void
         {
@@ -37,43 +38,38 @@
         public AddToLayer(_sprite: Phaser.Sprite, _layer: string, _collision?: boolean): void {
             var layer: MapLayer = this.GetLayer(_layer)
             layer.group.add(_sprite);
-            if (_collision) {
+            if (_collision)
                 this.colliders.push(_sprite);
-            }
         }
 
         public UpdateChunksAround(_cR: number, _cC: number): void {
 
-            for (var r: number = 0; r < this.chunks.length; r++) {
-                for (var c: number = 0; c < this.chunks[r].length; c++) {
+            for (var r: number = 0; r < this.chunks.length; r++)
+                for (var c: number = 0; c < this.chunks[r].length; c++)
                     this.chunks[r][c].PrematureDeactivation();
-                }
-            }
 
             this.centerChunk = this.chunks[_cR][_cC];
             this.centerChunk.Activate();
             this.centerChunk.ActivateAdjacent();
 
-            for (var r: number = 0; r < this.chunks.length; r++) {
-                for (var c: number = 0; c < this.chunks[r].length; c++) {
+            for (var r: number = 0; r < this.chunks.length; r++) 
+                for (var c: number = 0; c < this.chunks[r].length; c++)
                     this.chunks[r][c].DeactivationCheck();
-                }
-            }
         }
 
         public UpdateCollisionOnChunk(_chunk: TiledChunks.Chunk): void {
-            for (var i: number = 0; i < this.colliders.length; i++) 
-                for (var c: number = 0; c < _chunk.colliders.length; c++)
+            for (var i: number = 0; i < this.colliders.length; i++)
+                for (var c: number = 0; c < _chunk.colliders.length; c++) {
                     this.game.physics.arcade.collide(this.colliders[i], _chunk.colliders[c]);
+                    this.collisionChecks++;
+                }
         }
 
         public UpdateCollisions(): void 
         {
             this.UpdateCollisionOnChunk(this.centerChunk);
-            for (var a: number = 0; a < this.centerChunk.adjacentChunks.length; a++)
-            {
-                this.UpdateCollisionOnChunk(this.centerChunk.adjacentChunks[a]);
-            }
+            for (var a: number = 0; a < this.centerChunk.adjacentCollisionChunks.length; a++)
+                this.UpdateCollisionOnChunk(this.centerChunk.adjacentCollisionChunks[a]);
         }
 
         public UpdateMap(): void {
@@ -108,7 +104,7 @@
             this.data = _data;
             this.container = new Phaser.Group(_game);
             this.colliders = [];
-
+            this.collisionChecks = 0;
             // Create a group for each layer
             this.layers = [];
             var layerGroup: Phaser.Group;
