@@ -15,7 +15,7 @@
 
         adjacentGraphicalChunks: TiledChunks.Chunk[];
         adjacentCollisionChunks: TiledChunks.Chunk[];
-
+        
         layers: TiledChunks.ChunkLayer[];
         colliders: Phaser.Sprite[];
 
@@ -86,10 +86,6 @@
         
 
         /*
-            THIS ALGORITHM IS A LOT FASTER - 
-            BUT IN CERTAIN RESOLUTIONS IT MISSES CORNERS
-            YOU CAN FIX THIS BY INCREASING CHUNK TILE ROW/COLUMN count
-
             1 - UP & RIGHT
             2 - UP & LEFT
             3 - DOWN & LEFT
@@ -106,6 +102,7 @@
             return _chunks;
         }
         
+
         public GetAdjacentChunks(_depthX: number, _depthY: number, _direction?:number): TiledChunks.Chunk[] {
             
 
@@ -186,6 +183,30 @@
                             adjacent.push(chunksInDirection[c]);
                     }
                 }
+
+                // Now we need to add the 4 corners
+                var furtestLeft: number = this.column;
+                var furtestRight: number = this.column;
+                var furtestTop: number = this.row;
+                var furtestDown: number = this.row;
+                var cC: number = 0;
+                var cR: number = 0;
+                for (var i: number = 0; i < adjacent.length; i++) {
+                    cC = adjacent[i].coord.column;
+                    cR = adjacent[i].coord.row;
+                    if (cC > furtestRight)
+                        furtestRight = cC;
+                    else if (cC < furtestLeft)
+                        furtestLeft = cC;
+                    if (cR > furtestDown)
+                        furtestDown = cR;
+                    else if (cR < furtestTop)
+                        furtestTop = cR;
+                }
+                TiledChunks.Chunk.MergeChunks(adjacent, [this.map.chunks[furtestTop][furtestLeft]]);
+                TiledChunks.Chunk.MergeChunks(adjacent, [this.map.chunks[furtestTop][furtestRight]]);
+                TiledChunks.Chunk.MergeChunks(adjacent, [this.map.chunks[furtestDown][furtestLeft]]);
+                TiledChunks.Chunk.MergeChunks(adjacent, [this.map.chunks[furtestDown][furtestRight]]);
             }
 
             return adjacent;
@@ -238,8 +259,9 @@
             this.row = _row;
             this.column = _column;
             this.colliders = [];
-            this.x = this.column * this.map.data.chunkWidth;
+            this.x = this.column * this.map.data.chunkWidth
             this.y = this.row * this.map.data.chunkHeight;
+            
 
             // Easy way to keep track of the chunks
             this.coord = new TiledChunks.ChunkCoord(this.row, this.column);

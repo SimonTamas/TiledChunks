@@ -59,14 +59,15 @@
 
         public CalculateNeededChunkCacheSizes(): void {
             // Find the chunks first biggest multiply 
-            var foundWidth = 0;
-            var foundHeight = 0;
-            while (foundWidth < this.viewportWidth)
+            var foundWidth:number = 0;
+            var foundHeight:number = 0;
+            var needWidth: number = this.viewportWidth;
+            var needHeight: number = this.viewportHeight;
+            while (foundWidth < needWidth)
                 foundWidth += this.chunkWidth;
-            while (foundHeight < this.viewportHeight)
+            while (foundHeight < needHeight)
                 foundHeight += this.chunkHeight;
-
-            console.log(foundWidth + " - " + foundHeight);
+            
 
             this.chunkNeedCacheHorizontal = Math.floor(foundWidth / this.chunkWidth / 2);
             this.chunkNeedCacheVertical = Math.floor(foundHeight / this.chunkHeight / 2);
