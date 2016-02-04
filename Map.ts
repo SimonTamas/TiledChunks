@@ -17,6 +17,7 @@
         colliders: Phaser.Sprite[];
 
         collisionChecks: number;
+        chunksDrawn: number;
 
         public AddListener(_event: string, _callback: Object): void
         {
@@ -49,6 +50,8 @@
                     this.chunks[r][c].PrematureDeactivation();
 
             this.centerChunk = this.chunks[_cR][_cC];
+            
+
             this.centerChunk.Activate();
             this.centerChunk.ActivateAdjacent();
 
@@ -98,6 +101,21 @@
             }
         }
 
+        /*
+            So we want to resize the world viewport
+
+        */
+        public ResizeViewport(_newWidth: number, _newHeight: number): void {
+            this.data.viewportWidth = _newWidth;
+            this.data.viewportHeight = _newHeight;
+
+            // Recalculate needed chunk cache sizes
+            this.data.CalculateNeededChunkCacheSizes();
+
+            // Now recache world chunk adjacent graphical chunks
+            this.CacheAdjacentChunks();
+        }
+
         constructor(_game: Phaser.Game, _data: TiledChunks.MapData)
         {
             this.game = _game;
@@ -105,6 +123,7 @@
             this.container = new Phaser.Group(_game);
             this.colliders = [];
             this.collisionChecks = 0;
+            this.chunksDrawn = 0;
             // Create a group for each layer
             this.layers = [];
             var layerGroup: Phaser.Group;

@@ -65,6 +65,7 @@
             this.deactivating = false;
             if (!this.active) {
                 this.active = true;
+                this.map.chunksDrawn++;
                 this.DrawChunk();
             }
         }
@@ -72,14 +73,10 @@
         public Deactivate(): void {
             if (this.active) {
                 this.active = false;
+                this.map.chunksDrawn--;
                 this.EraseChunk();
             }
         }
-
-        public PlaceGameOnLayer(_object: Phaser.Sprite, _layer: string): void {
-
-        }
-
 
         public ActivateAdjacent(): void {
             for (var a: number = 0; a < this.adjacentGraphicalChunks.length; a++)
@@ -91,6 +88,7 @@
         /*
             THIS ALGORITHM IS A LOT FASTER - 
             BUT IN CERTAIN RESOLUTIONS IT MISSES CORNERS
+            YOU CAN FIX THIS BY INCREASING CHUNK TILE ROW/COLUMN count
 
             1 - UP & RIGHT
             2 - UP & LEFT
@@ -177,9 +175,6 @@
                         }
                     break;
                 }
-                if (_depthY > 0) {
-                    TiledChunks.Chunk.MergeChunks(adjacent, this.GetAdjacentChunks(_depthX, _depthY - 1, _direction))
-                }
             }
             else {
                 // This is the center chunk 
@@ -196,8 +191,12 @@
             return adjacent;
         }
 
-        public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
+        public CacheAdjacentGraphicalChunks(_depthX: number, _depthY: number): void {
             this.adjacentGraphicalChunks = this.GetAdjacentChunks(_depthX, _depthY);
+        }
+
+        public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
+            this.CacheAdjacentGraphicalChunks(_depthX, _depthY);
             this.adjacentCollisionChunks = this.GetAdjacentChunks(0, 0);
         }
 

@@ -57,6 +57,23 @@
             return this.GetTilesetForId(_tileID).GetFrameFromId(_tileID);
         }
 
+        public CalculateNeededChunkCacheSizes(): void {
+            // Find the chunks first biggest multiply 
+            var foundWidth = 0;
+            var foundHeight = 0;
+            while (foundWidth < this.viewportWidth)
+                foundWidth += this.chunkWidth;
+            while (foundHeight < this.viewportHeight)
+                foundHeight += this.chunkHeight;
+
+            console.log(foundWidth + " - " + foundHeight);
+
+            this.chunkNeedCacheHorizontal = Math.floor(foundWidth / this.chunkWidth / 2);
+            this.chunkNeedCacheVertical = Math.floor(foundHeight / this.chunkHeight / 2);
+
+            console.log(this.chunkNeedCacheHorizontal + "/" + this.chunkNeedCacheVertical);
+        }
+
         constructor(_worldWidth: number, _worldHeight: number, _viewportWidth: number, _viewportHeight: number, _chunkTileRows: number, _chunkTileColumns: number, _tileWidth: number, _tileHeight: number, _tiledMap: JSON, _usedLayers: TiledChunks.LayerData[], _tilesets: TiledChunks.Tileset[])
         {
 
@@ -86,16 +103,7 @@
             // Now that we now everything about the map/chunk/tiles/viewport
             // We must calculate how many chunks we have to render 
 
-            // Find the chunks first biggest multiply 
-            var foundWidth = 0;
-            var foundHeight = 0;
-            while (foundWidth < this.viewportWidth)
-                foundWidth += this.chunkWidth;
-            while (foundHeight < this.viewportHeight)
-                foundHeight += this.chunkHeight;
-
-            this.chunkNeedCacheHorizontal = Math.floor(foundWidth / this.chunkWidth / 2);
-            this.chunkNeedCacheVertical = Math.floor(foundHeight / this.chunkHeight / 2);
+            this.CalculateNeededChunkCacheSizes();
             
             // Convert Tiled's one dimensional array into a matrix
             this.layers = _usedLayers;
