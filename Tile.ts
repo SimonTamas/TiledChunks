@@ -5,14 +5,15 @@
         chunkLayer: TiledChunks.ChunkLayer;
         tile: Phaser.Sprite;
         data: TiledChunks.TileData;
+        key: string;
         static tiles: number = 0;
 
         public DrawTile(_chunkLayer: TiledChunks.ChunkLayer): void {
-            _chunkLayer.mapLayer.group.add(this.tile);
+            _chunkLayer.mapLayer.container.add(this.tile);
         }
 
         public EraseTile(_chunkLayer: TiledChunks.ChunkLayer): void {
-            _chunkLayer.mapLayer.group.remove(this.tile);
+            _chunkLayer.mapLayer.container.remove(this.tile);
         }
 
         constructor(_chunkLayer: TiledChunks.ChunkLayer, _offsetX: number, _offsetY: number, _data: TiledChunks.TileData)
@@ -23,12 +24,15 @@
             var tileX = _chunkLayer.chunk.x + (_offsetX * this.chunkLayer.chunk.map.data.tileWidth);
             var tileY = _chunkLayer.chunk.y + (_offsetY * this.chunkLayer.chunk.map.data.tileHeight);
 
-
-
+            this.key = tileX + "/" + tileY;
             this.tile = new Phaser.Sprite(this.chunkLayer.chunk.map.game, tileX, tileY);
 
-            /* DEBUGGING VISUAL
-            if (_offsetY == 0 || _offsetY == this.chunkLayer.chunk.map.data.chunkTileRows-1) {
+            tileX = null;
+            tileY = null;
+
+            // DEBUGGING VISUAL 
+            /*
+            if (_offsetY == 0 || _offsetY == this.chunkLayer.chunk.map.data.chunkTileRows - 1) {
                 this.tile.height = 25;
             }
             if (_offsetX== 0 || _offsetX == this.chunkLayer.chunk.map.data.chunkTileColumns-1) {

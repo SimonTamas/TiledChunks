@@ -18,6 +18,7 @@
         
         layers: TiledChunks.ChunkLayer[];
         colliders: Phaser.Sprite[];
+        triggers: TiledChunks.TriggerSprite[];
 
         /*
             When a camera enters a new chunk
@@ -234,23 +235,36 @@
                 i++;
             return i < _chunkArray.length;
         }
-        
 
-        public AddColliders(_chunkLayer: TiledChunks.ChunkLayer): void {
+        public AddColliders(_chunkLayer: TiledChunks.ChunkLayer, _trigger?: boolean): void {
             var collisionX: number;
             var collisionY: number;
-            var rect: Phaser.Sprite;
+            var rect: any;
+            var tileID: number;
             for (var r: number = 0; r < _chunkLayer.tiles.length; r++) {
                 if (_chunkLayer.tiles[r]) {
                     for (var c: number = 0; c < _chunkLayer.tiles[r].length; c++) {
-                        if (_chunkLayer.tiles[r][c] && _chunkLayer.tiles[r][c].data.id != _chunkLayer.layer.emptyID) {
+                        if (_chunkLayer.tiles[r][c] && _chunkLayer.tiles[r][c].data.id != _chunkLayer.layer.emptyID) 
+                        {
+                            tileID = _chunkLayer.tiles[r][c].data.id;
+
                             collisionX = _chunkLayer.chunk.x + ( c * this.map.data.tileWidth);
                             collisionY = _chunkLayer.chunk.y + (r * this.map.data.tileHeight);
-                            rect = new Phaser.Sprite(this.map.game, collisionX, collisionY);
+
+                            if (_trigger) {
+                                rect = new TiledChunks.TriggerSprite(this.map.game, collisionX, collisionY);
+                                this.triggers.push(rect);
+
+                            }
+                            else {
+                                rect = new Phaser.Sprite(this.map.game, collisionX, collisionY);
+                                this.colliders.push(rect);
+                            }
+
                             this.map.game.physics.enable(rect, Phaser.Physics.ARCADE);
+                            rect.name = this.map.data.GetTilesetForId(tileID).GetPropertyValueFromId(tileID, "name");
                             rect.body.setSize(this.map.data.tileWidth, this.map.data.tileHeight, 0, 0);
                             rect.body.immovable = true;
-                            this.colliders.push(rect);
                         }
                     }
                 }
@@ -265,6 +279,7 @@
             this.row = _row;
             this.column = _column;
             this.colliders = [];
+            this.triggers = [];
             this.x = this.column * this.map.data.chunkWidth
             this.y = this.row * this.map.data.chunkHeight;
             
@@ -276,13 +291,12 @@
             // Create the layers
             this.layers = [];
             var layerData: TiledChunks.LayerData;
-            var hasCollisionLayer: boolean = false;
             for (var l: number = 0; l < this.map.data.layers.length; l++) {
                 layerData = this.map.data.layers[l];
-                if (!layerData.isCollisionLayer)
+                if (layerData.isCollisionLayer)
+                    this.AddColliders(layerData.GetChunkLayer(this), layerData.isTriggerLayer);
+                else 
                     this.layers.push(layerData.GetChunkLayer(this));
-                else
-                    this.AddColliders(layerData.GetChunkLayer(this));
             }
 
            
@@ -290,7 +304,6 @@
             // Nullify localizations
             // for garbage collection
             layerData = null;
-            hasCollisionLayer = null;
             
             Chunk.chunks++;
         }

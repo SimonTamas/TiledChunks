@@ -2,11 +2,11 @@
 
     export class MapLayer {
 
-        group: Phaser.Group;
+        container: any;
         data: TiledChunks.LayerData;
 
-        constructor(_group: Phaser.Group, _data: TiledChunks.LayerData) {
-            this.group = _group;
+        constructor(_container: any, _data: TiledChunks.LayerData) {
+            this.container = _container;
             this.data = _data;
         }
 

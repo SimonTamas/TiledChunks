@@ -5,6 +5,8 @@
         emptyID: number;
         tileDatas: TiledChunks.TileData[][];
         isCollisionLayer: boolean;
+        isTriggerLayer: boolean;
+        batch: boolean;
 
 
         // Convert two dimension list of tile IDs ( from Tiled )
@@ -52,11 +54,13 @@
             return new ChunkLayer(_chunk, this, chunkTileDatas);
         }
 
-        constructor(_name: string, _emptyID?: number, _collision?: boolean)
+        constructor(_name: string, _batchLayer?: boolean, _emptyID?: number, _collision?: boolean, _trigger?: boolean)
         {
             this.name = _name;
             this.emptyID = _emptyID || 0;
+            this.batch = _batchLayer || false;
             this.isCollisionLayer = _collision || false;
+            this.isTriggerLayer = _trigger || false;
         }
         
     }

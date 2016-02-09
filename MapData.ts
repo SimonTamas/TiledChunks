@@ -48,9 +48,12 @@
 
         public GetTilesetForId(_tileID: number): TiledChunks.Tileset {
             var i: number = 0;
-            while (i < this.tilesets.length && this.tilesets[i].fromID > _tileID || this.tilesets[i].toID < _tileID)
+            while (i < this.tilesets.length) {
+                if (this.tilesets[i].fromID <= _tileID && _tileID < this.tilesets[i].toID) {
+                    return this.tilesets[i];
+                }
                 i++;
-            return this.tilesets[i];
+            }
         }
 
         public GetFrameForId(_tileID: number): number {
@@ -63,16 +66,16 @@
             var foundHeight:number = 0;
             var needWidth: number = this.viewportWidth;
             var needHeight: number = this.viewportHeight;
-            while (foundWidth < needWidth)
+
+            while (needWidth >= foundWidth)
                 foundWidth += this.chunkWidth;
-            while (foundHeight < needHeight)
+            while (needHeight >= foundHeight)
                 foundHeight += this.chunkHeight;
             
 
             this.chunkNeedCacheHorizontal = Math.floor(foundWidth / this.chunkWidth / 2);
             this.chunkNeedCacheVertical = Math.floor(foundHeight / this.chunkHeight / 2);
-
-            console.log(this.chunkNeedCacheHorizontal + "/" + this.chunkNeedCacheVertical);
+            
         }
 
         constructor(_worldWidth: number, _worldHeight: number, _viewportWidth: number, _viewportHeight: number, _chunkTileRows: number, _chunkTileColumns: number, _tileWidth: number, _tileHeight: number, _tiledMap: JSON, _usedLayers: TiledChunks.LayerData[], _tilesets: TiledChunks.Tileset[])
@@ -121,16 +124,34 @@
 
             // Tileset handling
             this.tilesets = _tilesets;
+            var foundTileset: boolean;
+            var dummyTileset: TiledChunks.Tileset;
             for (var t: number = 0; t < _tiledMap["tilesets"].length; t++) {
+                foundTileset = false;
+
+                var from: number = _tiledMap["tilesets"][t]["firstgid"];
+                var count: number = _tiledMap["tilesets"][t]["tilecount"];
+                var customProperties: Object = _tiledMap["tilesets"][t]["tileproperties"];
+
                 for (var s: number = 0; s < this.tilesets.length; s++) {
                     if (this.tilesets[s].name == _tiledMap["tilesets"][t]["name"]) {
-                        var from: number = _tiledMap["tilesets"][t]["firstgid"];
-                        var count: number = _tiledMap["tilesets"][t]["tilecount"];
+                        foundTileset = true;
                         this.tilesets[s].fromID = from;
                         this.tilesets[s].toID = from + count;
+                        this.tilesets[s].properties = customProperties;
                     }
                 }
+
+                if (!foundTileset) {
+                    dummyTileset = new TiledChunks.Tileset(_tiledMap["tilesets"][t]["name"], null);
+                    dummyTileset[s].fromID = from;
+                    dummyTileset[s].toID = from + count;
+                    dummyTileset[s].properties = customProperties;
+                    this.tilesets.push(dummyTileset);
+                }
             }
+            foundTileset = null;
+            dummyTileset = null;
         }
     }
 }

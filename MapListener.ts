@@ -3,9 +3,9 @@
     export class MapListener {
 
         event: string;
-        callback: Object;
+        callback: Function;
 
-        constructor(_event: string, _callback: Object) {
+        constructor(_event: string, _callback: Function) {
             this.event = _event;
             this.callback = _callback;
         }

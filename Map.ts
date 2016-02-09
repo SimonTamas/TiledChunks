@@ -15,19 +15,45 @@
         layers: TiledChunks.MapLayer[];
         colliders: Phaser.Sprite[];
 
+
+        // DEBUG
+        triggerChecks: number;
         collisionChecks: number;
         chunksDrawn: number;
 
-        public AddListener(_event: string, _callback: Object): void
+
+
+        // ----------------------------------------------------------------------------------------------
+        // ----------------------------------- MAP EVENT HANDLING ---------------------------------------
+        // ----------------------------------------------------------------------------------------------
+
+        public AddListener(_event: string, _callback: Function): void
         {
             this.listeners.push(new TiledChunks.MapListener(_event, _callback));
         }
 
         public RemoveListener(_event: string) : void
         {
-
+            
         }
 
+        public OnTriggerEnter(_trigger: TiledChunks.TriggerSprite, _collider: Phaser.Sprite): void {
+            for (var l: number = 0; l < this.listeners.length; l++)
+                if (this.listeners[l].event == "OnTriggerEnter")
+                    this.listeners[l].callback(_trigger, _collider);
+        }
+
+        public OnTriggerLeave(_trigger: TiledChunks.TriggerSprite, _collider: Phaser.Sprite): void {
+            for (var l: number = 0; l < this.listeners.length; l++) 
+                if (this.listeners[l].event == "OnTriggerLeave")
+                    this.listeners[l].callback(_trigger, _collider);
+        }
+        
+        // ----------------------------------------------------------------------------------------------
+        // ----------------------------------- MAP EVENT HANDLING ---------------------------------------
+        // ----------------------------------------------------------------------------------------------
+
+        
         public GetLayer(_name: string): TiledChunks.MapLayer {
             var i:number = 0;
             while (i < this.layers.length && this.layers[i].data.name != _name)
@@ -35,10 +61,10 @@
             return this.layers[i];
         }
 
-        public AddToLayer(_sprite: Phaser.Sprite, _layer: string, _collision?: boolean): void {
-            var layer: MapLayer = this.GetLayer(_layer)
-            layer.group.add(_sprite);
-            if (_collision)
+        public AddToLayer(_sprite: Phaser.Sprite, _layer: string, _collider: boolean): void {
+            var layer: MapLayer = this.GetLayer(_layer);
+            layer.container.add(_sprite);
+            if (_collider)
                 this.colliders.push(_sprite);
         }
 
@@ -59,13 +85,45 @@
                     this.chunks[r][c].DeactivationCheck();
         }
 
+        public IsCollidingWithSimmilarTrigger(_collider: Phaser.Sprite, _chunk: TiledChunks.Chunk, _triggerIndex: number): boolean {
+            for (var c: number = 0; c < _chunk.triggers.length; c++)
+                if (c != _triggerIndex && _chunk.triggers[c].name == _chunk.triggers[_triggerIndex].name && _chunk.triggers[c].entered)
+                    return true;
+            return false;
+        }
+
         public UpdateCollisionOnChunk(_chunk: TiledChunks.Chunk): void {
-            for (var i: number = 0; i < this.colliders.length; i++)
+
+
+            for (var i: number = 0; i < this.colliders.length; i++) {
                 for (var c: number = 0; c < _chunk.colliders.length; c++) {
                     this.game.physics.arcade.collide(this.colliders[i], _chunk.colliders[c]);
                     this.collisionChecks++;
                 }
+                for (var t: number = 0; t < _chunk.triggers.length; t++) {
+                    this.triggerChecks++;
+                    if (this.game.physics.arcade.overlap(this.colliders[i], _chunk.triggers[t])) {
+                        if (!_chunk.triggers[t].entered) {
+                            _chunk.triggers[t].entered = true;
+                            // A collider will only enter a trigger
+                            // if it is not colliding with any other simmilar triggers
+                            if (!this.IsCollidingWithSimmilarTrigger(this.colliders[i], _chunk, t))
+                                this.OnTriggerEnter(_chunk.triggers[t], this.colliders[i]);
+                        }
+                    }
+                    else {
+                        if (_chunk.triggers[t].entered) {
+                            _chunk.triggers[t].entered = false;
+                            // A collider will only leave a trigger
+                            // if it no longer collides with any other simmilar triggers
+                            if (!this.IsCollidingWithSimmilarTrigger(this.colliders[i], _chunk, t))
+                                this.OnTriggerLeave(_chunk.triggers[t], this.colliders[i]);
+                        }
+                    }
+                }
+            }
         }
+           
 
         public UpdateCollisions(): void 
         {
@@ -76,12 +134,12 @@
 
         public UpdateMap(): void {
             
-            
-            var camera_centerX = this.game.camera.x + (this.game.camera.width / 2);
-            var camera_centerY = this.game.camera.y + (this.game.camera.height / 2)
 
-            var camera_chunkRow = Math.floor(camera_centerY / this.data.chunkHeight);
-            var camera_chunkColumn = Math.floor(camera_centerX / this.data.chunkWidth);
+            var camera_centerX: number = this.game.camera.x + (this.game.camera.width / 2);
+            var camera_centerY: number = this.game.camera.y + (this.game.camera.height / 2)
+
+            var camera_chunkRow: number = Math.floor(camera_centerY / this.data.chunkHeight);
+            var camera_chunkColumn: number = Math.floor(camera_centerX / this.data.chunkWidth);
 
             if (camera_chunkRow != this.cameraChunkRow || camera_chunkColumn != this.cameraChunkColumn) {
                 this.cameraChunkRow = camera_chunkRow;
@@ -113,7 +171,7 @@
             this.data.CalculateNeededChunkCacheSizes();
 
             // Now recache world chunk adjacent graphical chunks
-            this.CacheAdjacentChunks();
+            this.LoadCachedChunks(false);
         }
 
 
@@ -179,19 +237,25 @@
             this.container = new Phaser.Group(_game);
             this.colliders = [];
             this.collisionChecks = 0;
+            this.triggerChecks = 0;
             this.chunksDrawn = 0;
 
+            console.log(_data.tilesets);
 
 
             // Create a group for each layer
+            this.listeners = [];
             this.layers = [];
-            var layerGroup: Phaser.Group;
+            var layerContainer: any;
             var layerData: TiledChunks.LayerData;
             for (var l: number = 0; l < this.data.layers.length; l++)
             {
                 layerData = this.data.layers[l];
-                layerGroup = new Phaser.Group(this.game, this.container, layerData.name);
-                this.layers.push(new TiledChunks.MapLayer(layerGroup, layerData));
+                if (layerData.batch)
+                    layerContainer = new Phaser.SpriteBatch(this.game, this.container, layerData.name);
+                else
+                    layerContainer = new Phaser.Group(this.game, this.container, layerData.name);
+                this.layers.push(new TiledChunks.MapLayer(layerContainer, layerData));
             }
 
             // Create the Chunks
@@ -211,6 +275,8 @@
 
             this.LoadCachedChunks(false);
             this.UpdateMap();
+
+            console.log(this.data.tilesets);
 
             
             
