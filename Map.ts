@@ -61,7 +61,7 @@
             return this.layers[i];
         }
 
-        public AddToLayer(_sprite: Phaser.Sprite, _layer: string, _collider: boolean): void {
+        public AddToLayer(_sprite: any, _layer: string, _collider: boolean): void {
             var layer: MapLayer = this.GetLayer(_layer);
             layer.container.add(_sprite);
             if (_collider)
