@@ -21,8 +21,6 @@
         collisionChecks: number;
         chunksDrawn: number;
 
-
-
         // ----------------------------------------------------------------------------------------------
         // ----------------------------------- MAP EVENT HANDLING ---------------------------------------
         // ----------------------------------------------------------------------------------------------
@@ -36,6 +34,7 @@
         {
             
         }
+
 
         public OnTriggerEnter(_trigger: TiledChunks.TriggerSprite, _collider: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++)
@@ -228,6 +227,35 @@
                     output += ",";
             }
             prompt("Adjacent Chunks CACHE",output + "]}");
+        }
+
+
+        public GetTilesOnLayer(_layerName: string): TiledChunks.Tile[] {
+            var returnTiles: TiledChunks.Tile[] = [];
+            var chunk: TiledChunks.Chunk;
+            //var mapLayer: TiledChunks.MapLayer = this.GetLayer(_layerName);
+            for (var r: number = 0; r < this.chunks.length; r++) {
+                for (var c: number = 0; c < this.chunks[r].length; c++) {
+                    chunk = this.chunks[r][c];
+                    // Find the layer
+                    var l = 0;
+                    while (l < chunk.layers.length && chunk.layers[l].layer.name != _layerName)
+                        l++;
+                    if (l < chunk.layers.length) {
+                        var layer: TiledChunks.ChunkLayer = chunk.layers[l];
+                        for (var tR: number = 0; tR < layer.tiles.length; tR++)
+                            if (layer.tiles[tR]) 
+                                for (var tC: number = 0; tC < layer.tiles[tR].length; tC++)
+                                    if (layer.tiles[tR][tC])
+                                        returnTiles.push(layer.tiles[tR][tC]);
+                    }
+                    else {
+                        // We could not find the layer
+                        // STOP10: TODO: Handle this
+                    }
+                }
+            }
+            return returnTiles
         }
 
         constructor(_game: Phaser.Game, _data: TiledChunks.MapData)
