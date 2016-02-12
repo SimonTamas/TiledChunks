@@ -3,17 +3,18 @@
     export class Tile
     {
         chunkLayer: TiledChunks.ChunkLayer;
-        tile: Phaser.Sprite;
+        sprite: Phaser.Sprite;
         data: TiledChunks.TileData;
         key: string;
+        point: Phaser.Point;
         static tiles: number = 0;
 
         public DrawTile(_chunkLayer: TiledChunks.ChunkLayer): void {
-            _chunkLayer.mapLayer.container.add(this.tile);
+            _chunkLayer.mapLayer.container.add(this.sprite);
         }
 
         public EraseTile(_chunkLayer: TiledChunks.ChunkLayer): void {
-            _chunkLayer.mapLayer.container.remove(this.tile);
+            _chunkLayer.mapLayer.container.remove(this.sprite);
         }
 
         constructor(_chunkLayer: TiledChunks.ChunkLayer, _offsetX: number, _offsetY: number, _data: TiledChunks.TileData)
@@ -24,9 +25,11 @@
             var tileX = _chunkLayer.chunk.x + (_offsetX * this.chunkLayer.chunk.map.data.tileWidth);
             var tileY = _chunkLayer.chunk.y + (_offsetY * this.chunkLayer.chunk.map.data.tileHeight);
 
-            this.key = tileX + "/" + tileY;
-            this.tile = new Phaser.Sprite(this.chunkLayer.chunk.map.game, tileX, tileY);
+            this.point = new Phaser.Point(tileX, tileY);
 
+            this.key = tileX + "/" + tileY;
+            this.sprite = new Phaser.Sprite(this.chunkLayer.chunk.map.game, tileX, tileY);
+            this.sprite.name = "Tile" + this.key;
             tileX = null;
             tileY = null;
 
@@ -44,8 +47,9 @@
             this.data.textureKey = this.chunkLayer.chunk.map.data.GetTextureKeyForId(this.data.id);
             
 
-            this.tile.loadTexture(this.data.textureKey, this.data.textureFrame);
-            
+            this.sprite.loadTexture(this.data.textureKey, this.data.textureFrame);
+
+            this.sprite.anchor.set(0.5, 0.5);
 
             Tile.tiles++;
         }
