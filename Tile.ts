@@ -7,6 +7,8 @@
         data: TiledChunks.TileData;
         key: string;
         point: Phaser.Point;
+        chunkRow: number;
+        chunkColumn: number;
         static tiles: number = 0;
 
         public DrawTile(_chunkLayer: TiledChunks.ChunkLayer): void {
@@ -21,6 +23,10 @@
         {
             this.chunkLayer = _chunkLayer;
             this.data = _data;
+
+
+            this.chunkColumn = _offsetX;
+            this.chunkRow = _offsetY;
 
             var tileX = _chunkLayer.chunk.x + (_offsetX * this.chunkLayer.chunk.map.data.tileWidth);
             var tileY = _chunkLayer.chunk.y + (_offsetY * this.chunkLayer.chunk.map.data.tileHeight);
@@ -49,7 +55,7 @@
 
             this.sprite.loadTexture(this.data.textureKey, this.data.textureFrame);
 
-            this.sprite.anchor.set(0.5, 0.5);
+            //this.sprite.anchor.set(0.5, 0.5);
 
             Tile.tiles++;
         }

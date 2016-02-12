@@ -13,8 +13,12 @@
         }
 
         public GetPropertyValueFromId(_id: number, _property: string): string {
-            var frame: number = this.GetFrameFromId(_id);
-            return this.properties && this.properties[frame] && this.properties[frame][_property];
+            var properties: Object = this.GetPropertiesFromId(_id)
+            return properties && properties[_property] || "";
+        }
+
+        public GetPropertiesFromId(_id: number): Object {
+            return this.properties && this.properties[this.GetFrameFromId(_id)];
         }
 
         constructor(_name: string, _textureKey)

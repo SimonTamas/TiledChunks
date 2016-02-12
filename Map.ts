@@ -60,11 +60,11 @@
             return this.layers[i];
         }
 
-        public AddToLayer(_sprite: any, _layer: string, _collider: boolean): void {
+        public AddToLayer(_sprite: any, _layer: string, _isCollider: boolean): void {
             var layer: MapLayer = this.GetLayer(_layer);
             layer.container.add(_sprite);
-            if (_collider)
-                this.colliders.push(_sprite);
+            if (_isCollider)
+                this.AddCollider(_sprite);
         }
 
         public UpdateChunksAround(_cR: number, _cC: number): void {
@@ -92,6 +92,18 @@
             return c < _chunk.triggers.length;
         }
 
+        public AddCollider(_collider: Phaser.Sprite): void {
+            this.colliders.push(_collider);
+        }
+
+        public RemoveCollider(_collider: Phaser.Sprite): void {
+            var c: number = 0;
+            while (c < this.colliders.length && this.colliders[c] != _collider)
+                c++;
+            if (c < this.colliders.length)
+                this.colliders.splice(c, 1);
+        }
+
         public UpdateCollisionOnChunk(_chunk: TiledChunks.Chunk): void {
 
             var collider: Phaser.Sprite;
@@ -101,6 +113,7 @@
             for (var i: number = 0; i < this.colliders.length; i++) {
 
                 collider = this.colliders[i];
+
 
                 // Check collision between collider and tiles
                 for (var c: number = 0; c < _chunk.colliders.length; c++) {
@@ -274,6 +287,8 @@
             this.game = _game;
             this.data = _data;
             this.container = new Phaser.Group(_game);
+            //this.container.x = this.data.tileWidth / 2;
+            //this.container.y = this.data.tileHeight / 2;
             this.colliders = [];
             this.collisionChecks = 0;
             this.triggerChecks = 0;
