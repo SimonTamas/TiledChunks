@@ -54,9 +54,6 @@
             
 
             this.sprite.loadTexture(this.data.textureKey, this.data.textureFrame);
-
-            //this.sprite.anchor.set(0.5, 0.5);
-
             Tile.tiles++;
         }
 

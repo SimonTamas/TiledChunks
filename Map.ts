@@ -84,12 +84,19 @@
                     this.chunks[r][c].DeactivationCheck();
         }
 
-        public IsCollidingWithSimmilarTrigger(_collider: Phaser.Sprite, _trigger: TiledChunks.TriggerSprite, _chunk: TiledChunks.Chunk): boolean
+        public IsCollidingWithSimmilarTrigger(_collider: Phaser.Sprite, _trigger: TiledChunks.TriggerSprite, _chunk: TiledChunks.Chunk, _propagating?: boolean): boolean
         {
             var c: number = 0;
             while (c < _chunk.triggers.length && (_chunk.triggers[c] == _trigger || !_chunk.triggers[c].HasCollider(_collider))) 
                 c++;
-            return c < _chunk.triggers.length;
+            if (c < _chunk.triggers.length)
+                return true;
+            else if(!_propagating) {
+                var a: number = 0;
+                while (a < _chunk.adjacentCollisionChunks.length && !this.IsCollidingWithSimmilarTrigger(_collider, _trigger, _chunk.adjacentCollisionChunks[a],true))
+                    a++;
+                return a < _chunk.adjacentCollisionChunks.length;
+            }
         }
 
         public AddCollider(_collider: Phaser.Sprite): void {
