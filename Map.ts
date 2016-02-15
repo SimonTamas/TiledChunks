@@ -35,7 +35,6 @@
             
         }
 
-
         public OnTriggerEnter(_trigger: TiledChunks.TriggerSprite, _collider: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++)
                 if (this.listeners[l].event == "OnTriggerEnter" && this.listeners[l].sprite.name == _collider.name)
@@ -158,8 +157,9 @@
         public UpdateCollisions(): void 
         {
             this.UpdateCollisionOnChunk(this.centerChunk);
-            for (var a: number = 0; a < this.centerChunk.adjacentCollisionChunks.length; a++)
-                this.UpdateCollisionOnChunk(this.centerChunk.adjacentCollisionChunks[a]);
+            if (this.centerChunk.adjacentCollisionChunks)
+                for (var a: number = 0; a < this.centerChunk.adjacentCollisionChunks.length; a++)
+                    this.UpdateCollisionOnChunk(this.centerChunk.adjacentCollisionChunks[a]);
         }
 
         public UpdateMap(): void {
@@ -180,13 +180,14 @@
             this.UpdateCollisions();
         }
 
-        public CacheAdjacentChunks(): void {
+        public CacheAdjacentChunks(_cacheVisual: boolean): void {
             for (var r: number = 0; r < this.chunks.length; r++) {
                 for (var c: number = 0; c < this.chunks[r].length; c++) {
-                    this.chunks[r][c].CacheAdjacentChunks(this.data.chunkNeedCacheHorizontal, this.data.chunkNeedCacheVertical);
+                    this.chunks[r][c].CacheAdjacentChunks(this.data.chunkNeedCacheHorizontal, this.data.chunkNeedCacheVertical, _cacheVisual);
                 }
             }
-            this.OutputCachedChunks();
+            if (_cacheVisual)
+                this.OutputCachedChunks();
         }
 
         /*
@@ -225,9 +226,7 @@
                     }
                 }
                 else {
-                    console.log("Could not find cached ajdacent chunks JSON");
-                    if (_cacheNowIfNotFound)
-                        ref.CacheAdjacentChunks();
+                    ref.CacheAdjacentChunks(_cacheNowIfNotFound);
                 }
             }, this);
             jsonLoader.start();
@@ -264,7 +263,7 @@
         public GetTilesOnLayer(_layerName: string): TiledChunks.Tile[] {
             var returnTiles: TiledChunks.Tile[] = [];
             var chunk: TiledChunks.Chunk;
-            //var mapLayer: TiledChunks.MapLayer = this.GetLayer(_layerName);
+            var foundLayer: boolean = false;
             for (var r: number = 0; r < this.chunks.length; r++) {
                 for (var c: number = 0; c < this.chunks[r].length; c++) {
                     chunk = this.chunks[r][c];
@@ -273,6 +272,7 @@
                     while (l < chunk.layers.length && chunk.layers[l].layer.name != _layerName)
                         l++;
                     if (l < chunk.layers.length) {
+                        foundLayer = true;
                         var layer: TiledChunks.ChunkLayer = chunk.layers[l];
                         for (var tR: number = 0; tR < layer.tiles.length; tR++)
                             if (layer.tiles[tR]) 
@@ -280,13 +280,45 @@
                                     if (layer.tiles[tR][tC])
                                         returnTiles.push(layer.tiles[tR][tC]);
                     }
-                    else {
-                        // We could not find the layer
-                        // STOP10: TODO: Handle this
-                    }
                 }
             }
+            if (!foundLayer)
+                console.log("Could not find any " + _layerName + " named layers");
             return returnTiles
+        }
+
+        public GetTilesOnLayerByProperty(_layer: string, _property: string, _value: string): TiledChunks.Tile[] {
+            var tiles: TiledChunks.Tile[] = this.GetTilesOnLayer(_layer);
+            var tile: TiledChunks.Tile;
+            var tileset: TiledChunks.Tileset;
+            var returnTiles: TiledChunks.Tile[] = [];
+            for (var t: number = 0; t < tiles.length; t++) {
+                tile = tiles[t];
+                tileset = this.data.GetTilesetForId(tile.data.id);
+                if (tileset.GetPropertyValueFromId(tile.data.id, _property) == _value)
+                    returnTiles.push(tile);
+            }
+            return returnTiles;
+        }
+
+        public GetNearestTileOnLayerByProperty(_point: Phaser.Point,_layer: string, _property: string, _value: string): TiledChunks.Tile {
+            var tiles = this.GetTilesOnLayerByProperty(_layer, _property, _value);
+            if (tiles.length > 0) {
+                var nearest = tiles[0];
+                var nearestDistance: number = _point.distance(tiles[0].point);
+                var calculatedDistance: number;
+                var tile: TiledChunks.Tile;
+                for (var t = 1; t < tiles.length; t++) {
+                    tile = tiles[t];
+                    calculatedDistance = _point.distance(tile.point);
+                    if (calculatedDistance < nearestDistance) {
+                        nearest = tile
+                        nearestDistance = calculatedDistance;
+                    }
+                }
+                return nearest;
+            }
+            return null;
         }
 
         constructor(_game: Phaser.Game, _data: TiledChunks.MapData)
@@ -300,9 +332,7 @@
             this.collisionChecks = 0;
             this.triggerChecks = 0;
             this.chunksDrawn = 0;
-
-            console.log(_data.tilesets);
-
+            
 
             // Create a group for each layer
             this.listeners = [];
@@ -336,10 +366,6 @@
 
             this.LoadCachedChunks(false);
             this.UpdateMap();
-
-            console.log(this.data.tilesets);
-
-            
             
             console.log("Created chunks: " + Chunk.chunks);
             console.log("Created tiles: " + Tile.tiles);

@@ -81,7 +81,7 @@
 
         public ActivateAdjacent(): void {
             if (!this.adjacentGraphicalChunks)
-                this.CacheAdjacentChunks(this.map.data.chunkNeedCacheHorizontal, this.map.data.chunkNeedCacheVertical);
+                this.CacheAdjacentGraphicalChunks(this.map.data.chunkNeedCacheHorizontal, this.map.data.chunkNeedCacheVertical);
             for (var a: number = 0; a < this.adjacentGraphicalChunks.length; a++)
                 this.adjacentGraphicalChunks[a].Activate();
         }
@@ -95,8 +95,9 @@
             this.adjacentCollisionChunks = this.GetAdjacentChunks(0, 0);
         }
 
-        public CacheAdjacentChunks(_depthX: number, _depthY: number): void {
-            this.CacheAdjacentGraphicalChunks(_depthX, _depthY);
+        public CacheAdjacentChunks(_depthX: number, _depthY: number, _cacheGraphical: boolean): void {
+            if (_cacheGraphical)
+                this.CacheAdjacentGraphicalChunks(_depthX, _depthY);
             this.CacheAdjacentCollisionChunks();
         }
 
@@ -253,8 +254,8 @@
 
                             if (_trigger) {
                                 rect = new TiledChunks.TriggerSprite(this.map.game, collisionX, collisionY);
+                                rect.anchor.set(0.5, 0.5);
                                 this.triggers.push(rect);
-
                             }
                             else {
                                 rect = new Phaser.Sprite(this.map.game, collisionX, collisionY);
@@ -291,12 +292,13 @@
             // Create the layers
             this.layers = [];
             var layerData: TiledChunks.LayerData;
+            var chunkLayer: TiledChunks.ChunkLayer;
             for (var l: number = 0; l < this.map.data.layers.length; l++) {
                 layerData = this.map.data.layers[l];
+                chunkLayer = layerData.GetChunkLayer(this);
                 if (layerData.isCollisionLayer)
-                    this.AddColliders(layerData.GetChunkLayer(this), layerData.isTriggerLayer);
-                else 
-                    this.layers.push(layerData.GetChunkLayer(this));
+                    this.AddColliders(chunkLayer, layerData.isTriggerLayer);
+                this.layers.push(chunkLayer);
             }
 
            
