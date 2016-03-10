@@ -21,7 +21,7 @@
             return this.properties && this.properties[this.GetFrameFromId(_id)];
         }
 
-        constructor(_name: string, _textureKey)
+        constructor(_name: string, _textureKey?: string)
         {
             this.name = _name;
             this.textureKey = _textureKey;

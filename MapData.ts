@@ -1,7 +1,7 @@
 ﻿module TiledChunks {
     export class MapData {
         
-        wordWidth: number;
+        worldWidth: number;
         worldHeight: number;
 
         viewportWidth: number;
@@ -25,6 +25,8 @@
         chunkNeedCacheHorizontal: number;
         chunkNeedCacheVertical: number;
 
+        fixedMap: boolean;
+
         layers: TiledChunks.LayerData[];
         tilesets: TiledChunks.Tileset[];
         
@@ -46,6 +48,7 @@
             return this.GetTilesetForId(_tileID).textureKey;
         }
 
+        // TODO: OPTIMZIE THIS
         public GetTilesetForId(_tileID: number): TiledChunks.Tileset {
             var i: number = 0;
             while (i < this.tilesets.length) {
@@ -56,6 +59,14 @@
             }
         }
 
+        public GetTileset(_name: string): TiledChunks.Tileset {
+            var i: number = 0;
+            while (i < this.tilesets.length && this.tilesets[i].name != _name)
+                i++;
+            if (i < this.tilesets.length)
+                return this.tilesets[i];
+        }
+
         public GetFrameForId(_tileID: number): number {
             return this.GetTilesetForId(_tileID).GetFrameFromId(_tileID);
         }
@@ -64,8 +75,8 @@
             // Find the chunks first biggest multiply 
             var foundWidth:number = 0;
             var foundHeight: number = 0;
-            var needWidth: number = (this.viewportWidth - this.chunkWidth) / 2
-            var needHeight: number = (this.viewportHeight - this.chunkHeight) / 2;
+            var needWidth: number = (this.viewportWidth - this.chunkWidth) / 4;
+            var needHeight: number = (this.viewportHeight - this.chunkHeight) /4;
 
             while (needWidth > foundWidth)
                 foundWidth += this.chunkWidth;
@@ -78,10 +89,10 @@
             
         }
 
-        constructor(_worldWidth: number, _worldHeight: number, _viewportWidth: number, _viewportHeight: number, _chunkTileRows: number, _chunkTileColumns: number, _tileWidth: number, _tileHeight: number, _tiledMap: JSON, _usedLayers: TiledChunks.LayerData[], _tilesets: TiledChunks.Tileset[])
+        constructor(_worldWidth: number, _worldHeight: number, _viewportWidth: number, _viewportHeight: number, _chunkTileRows: number, _chunkTileColumns: number, _tileWidth: number, _tileHeight: number, _tiledMap: JSON, _usedLayers: TiledChunks.LayerData[], _tilesets: TiledChunks.Tileset[], _fixedMap?: boolean)
         {
 
-            this.wordWidth = _worldWidth;
+            this.worldWidth = _worldWidth;
             this.worldHeight = _worldHeight;
 
             this.viewportWidth = _viewportWidth;
@@ -98,11 +109,13 @@
             this.chunkWidth = _chunkTileColumns * _tileWidth;
             this.chunkHeight = _chunkTileRows * _tileHeight;
 
-            this.chunkColumns = this.wordWidth / this.chunkWidth;
+            this.chunkColumns = this.worldWidth / this.chunkWidth;
             this.chunkRows = this.worldHeight / this.chunkHeight;
 
             this.tileCountX = this.chunkColumns * this.chunkTileColumns;
             this.tileCountY = this.chunkRows * this.chunkTileRows;
+
+            this.fixedMap = _fixedMap;
 
             // Now that we now everything about the map/chunk/tiles/viewport
             // We must calculate how many chunks we have to render 
@@ -144,9 +157,9 @@
 
                 if (!foundTileset) {
                     dummyTileset = new TiledChunks.Tileset(_tiledMap["tilesets"][t]["name"], null);
-                    dummyTileset[s].fromID = from;
-                    dummyTileset[s].toID = from + count;
-                    dummyTileset[s].properties = customProperties;
+                    dummyTileset.fromID = from;
+                    dummyTileset.toID = from + count;
+                    dummyTileset.properties = customProperties;
                     this.tilesets.push(dummyTileset);
                 }
             }

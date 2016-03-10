@@ -18,7 +18,7 @@
         
         layers: TiledChunks.ChunkLayer[];
         colliders: Phaser.Sprite[];
-        triggers: TiledChunks.TriggerSprite[];
+        triggers: TiledChunks.Trigger[];
 
         /*
             When a camera enters a new chunk
@@ -81,26 +81,24 @@
 
         public ActivateAdjacent(): void {
             if (!this.adjacentGraphicalChunks)
-                this.CacheAdjacentGraphicalChunks(this.map.data.chunkNeedCacheHorizontal, this.map.data.chunkNeedCacheVertical);
+                this.CacheAdjacentGraphicalChunks();
             for (var a: number = 0; a < this.adjacentGraphicalChunks.length; a++)
                 this.adjacentGraphicalChunks[a].Activate();
         }
         
 
-        public CacheAdjacentGraphicalChunks(_depthX: number, _depthY: number): void {
-            this.adjacentGraphicalChunks = this.GetAdjacentChunks(_depthX, _depthY);
+        public CacheAdjacentGraphicalChunks(_callback?:Function): void {
+            this.adjacentGraphicalChunks = this.GetVisibleChunks();
+            if (_callback)
+                _callback();
         }
 
-        public CacheAdjacentCollisionChunks(): void {
+        public CacheAdjacentCollisionChunks(_callback?:Function): void {
             this.adjacentCollisionChunks = this.GetAdjacentChunks(0, 0);
+            if (_callback)
+                _callback();
         }
-
-        public CacheAdjacentChunks(_depthX: number, _depthY: number, _cacheGraphical: boolean): void {
-            if (_cacheGraphical)
-                this.CacheAdjacentGraphicalChunks(_depthX, _depthY);
-            this.CacheAdjacentCollisionChunks();
-        }
-
+        
         /*
             1 - UP & RIGHT
             2 - UP & LEFT
@@ -118,6 +116,51 @@
             return _chunks;
         }
         
+
+        public GetVisibleChunks(): TiledChunks.Chunk[] {
+            var visible: TiledChunks.Chunk[] = [];
+
+            // A row height is 
+            var needX: number = Math.ceil(this.map.game.width / (this.map.data.chunkTileColumns * this.map.data.tileWidth));
+            var needY: number = Math.ceil(this.map.game.height / (this.map.data.chunkTileRows * this.map.data.tileHeight));
+
+            // Go up half
+            var up: number = Math.ceil(needY / 2);
+            var y: number = 0;
+            var atY: number = this.row;
+            var canGoUp: boolean = true;
+            while (canGoUp) {
+                canGoUp = atY - y > 0 && y < up;
+                if (canGoUp)
+                    y++;
+            }
+
+            // Now go to the upmost left
+            var left: number = Math.ceil(needX / 2) + 1;
+            var x: number = 0;
+            var atX: number = this.column;
+            var canGoLeft: boolean = true;
+            while (canGoLeft) {
+                canGoLeft = atX - x > 0 && x < left;
+                if (canGoLeft)
+                    x++;
+            }
+
+            var topLeft: TiledChunks.Chunk = this.map.chunks[this.row - y][this.column - x];
+
+            if (topLeft) {
+                for (var r: number = 0; r < needY+2; r++) {
+                    for (var c: number = 0; c < needX+3; c++) {
+                        var rY: number = topLeft.row + r;
+                        var cX: number = topLeft.column + c;
+                        if (this.map.chunks[rY] && this.map.chunks[rY][cX])
+                            visible.push(this.map.chunks[rY][cX]);
+                    }
+                }
+            }
+
+            return visible;
+        }
 
         public GetAdjacentChunks(_depthX: number, _depthY: number, _direction?:number): TiledChunks.Chunk[] {
             
@@ -249,27 +292,34 @@
                         {
                             tileID = _chunkLayer.tiles[r][c].data.id;
 
-                            collisionX = _chunkLayer.chunk.x + ( c * this.map.data.tileWidth);
+                            collisionX = _chunkLayer.chunk.x + (c * this.map.data.tileWidth);
                             collisionY = _chunkLayer.chunk.y + (r * this.map.data.tileHeight);
 
                             if (_trigger) {
-                                rect = new TiledChunks.TriggerSprite(this.map.game, collisionX, collisionY);
-                                rect.anchor.set(0.5, 0.5);
+                                rect = new TiledChunks.Trigger(this.map.game, tileID, collisionX, collisionY);
                                 this.triggers.push(rect);
                             }
                             else {
                                 rect = new Phaser.Sprite(this.map.game, collisionX, collisionY);
                                 this.colliders.push(rect);
+                                this.map.quadtree.insert(rect);
                             }
-
                             this.map.game.physics.enable(rect, Phaser.Physics.ARCADE);
-                            rect.name = this.map.data.GetTilesetForId(tileID).GetPropertyValueFromId(tileID, "name");
                             rect.body.setSize(this.map.data.tileWidth, this.map.data.tileHeight, 0, 0);
                             rect.body.immovable = true;
+                            rect.name = this.map.data.GetTilesetForId(tileID).GetPropertyValueFromId(tileID, "name");
                         }
                     }
                 }
             }
+        }
+
+        public RemoveCollider(_tile: TiledChunks.Tile): void {
+            var c: number = 0;
+            while (c < this.colliders.length && (this.colliders[c].x + "/"+this.colliders[c].y) != _tile.key)
+                c++;
+            if (c < this.colliders.length)
+                this.colliders.splice(c, 1);
         }
 
         constructor(_map: TiledChunks.Map, _row: number, _column: number)
@@ -300,8 +350,7 @@
                     this.AddColliders(chunkLayer, layerData.isTriggerLayer);
                 this.layers.push(chunkLayer);
             }
-
-           
+            
 
             // Nullify localizations
             // for garbage collection

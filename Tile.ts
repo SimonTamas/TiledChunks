@@ -19,6 +19,13 @@
             _chunkLayer.mapLayer.container.remove(this.sprite);
         }
 
+        public RemoveFromWorld(): void {
+            this.chunkLayer.tiles[this.chunkRow][this.chunkColumn] = null;
+            this.EraseTile(this.chunkLayer);
+            if (this.chunkLayer.layer.isCollisionLayer)
+                this.chunkLayer.chunk.RemoveCollider(this);
+        }
+
         constructor(_chunkLayer: TiledChunks.ChunkLayer, _offsetX: number, _offsetY: number, _data: TiledChunks.TileData)
         {
             this.chunkLayer = _chunkLayer;
@@ -42,12 +49,11 @@
             // DEBUGGING VISUAL 
             /*
             if (_offsetY == 0 || _offsetY == this.chunkLayer.chunk.map.data.chunkTileRows - 1) {
-                this.tile.height = 25;
+                this.sprite.height = 25;
             }
             if (_offsetX== 0 || _offsetX == this.chunkLayer.chunk.map.data.chunkTileColumns-1) {
-                this.tile.width = 25;
-            }
-            */
+                this.sprite.width = 25;
+            }*/
 
             this.data.textureFrame = this.chunkLayer.chunk.map.data.GetFrameForId(this.data.id); 
             this.data.textureKey = this.chunkLayer.chunk.map.data.GetTextureKeyForId(this.data.id);
