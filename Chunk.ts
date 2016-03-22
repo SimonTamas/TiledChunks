@@ -17,7 +17,7 @@
         adjacentCollisionChunks: TiledChunks.Chunk[];
         
         layers: TiledChunks.ChunkLayer[];
-        colliders: Phaser.Sprite[];
+        colliders: TiledChunks.Collider[];
         triggers: TiledChunks.Trigger[];
 
         /*
@@ -300,10 +300,11 @@
                                 this.triggers.push(rect);
                             }
                             else {
-                                rect = new Phaser.Sprite(this.map.game, collisionX, collisionY);
+                                rect = new TiledChunks.Collider(this.map.game, collisionX, collisionY, null, null, (this.row * this.map.data.chunkTileRows) + r, (this.column * this.map.data.chunkTileColumns) + c);
                                 this.colliders.push(rect);
                                 this.map.quadtree.insert(rect);
                             }
+
                             this.map.game.physics.enable(rect, Phaser.Physics.ARCADE);
                             rect.body.setSize(this.map.data.tileWidth, this.map.data.tileHeight, 0, 0);
                             rect.body.immovable = true;

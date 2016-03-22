@@ -6,7 +6,8 @@
         container: Phaser.Group;
         data: TiledChunks.MapData;
         chunks: TiledChunks.Chunk[][];
-        
+        pathfinding: EasyStar.js;
+        pathfindingDeadZones: Phaser.Sprite[] = [];
         centerChunk: TiledChunks.Chunk;
         cameraChunkRow: number;
         cameraChunkColumn: number;
@@ -73,7 +74,48 @@
         // ----------------------------------- MAP EVENT HANDLING ---------------------------------------
         // ----------------------------------------------------------------------------------------------
 
-        
+        public GetCollisionMatrix(): number[][] {
+
+            var returnMatrix: number[][] = [];
+            var chunk: TiledChunks.Chunk;
+            var collider: TiledChunks.Collider;
+            var r: number;
+            var c: number;
+            for (r = 0; r < this.data.chunkRows * this.data.chunkTileRows; r++) {
+                returnMatrix[r] = [];
+                for (c = 0; c < this.data.chunkColumns * this.data.chunkTileColumns; c++)
+                    returnMatrix[r][c] = 0;
+            }
+            
+            for (r=0; r < this.chunks.length; r++) {
+                for (c=0; c < this.chunks[r].length; c++) {
+                    chunk = this.chunks[r][c];
+                    for (var l: number = 0; l < chunk.colliders.length; l++) {
+                        collider = chunk.colliders[l];
+                        returnMatrix[collider.r][collider.c] = 1;
+                    }
+
+                }
+            }
+
+            for (var c: number = 0; c < this.colliders.length; c++) {
+                if (this.colliders[c].body.immovable) {
+                    r = Math.floor(this.colliders[c].y / this.data.tileHeight);
+                    c = Math.floor(this.colliders[c].x / this.data.tileWidth);
+                    returnMatrix[r][c] = 1;
+                }
+            }
+
+            for (var d: number = 0; d < this.pathfindingDeadZones.length; d++)
+            {
+                r = Math.floor(this.pathfindingDeadZones[d].y / this.data.tileHeight);
+                c = Math.floor(this.pathfindingDeadZones[d].x / this.data.tileWidth);
+                returnMatrix[r][c] = 1;
+            }
+
+            return returnMatrix;
+        }
+
         public GetLayer(_name: string): TiledChunks.MapLayer {
             var i:number = 0;
             while (i < this.layers.length && this.layers[i].data.name != _name)
@@ -81,11 +123,25 @@
             return this.layers[i];
         }
 
-        public AddToLayer(_sprite: any, _layer: string, _isCollider: boolean, _isLazyCollider?: boolean): void {
+        public AddToLayer(_sprite: Phaser.Sprite | Phaser.Group, _layer: string, _isCollider: boolean, _isLazyCollider?: boolean, _isPathfindingDeadZone?: boolean): void {
             var layer: MapLayer = this.GetLayer(_layer);
             layer.container.add(_sprite);
             if (_isCollider)
-                this.AddCollider(_sprite, _isLazyCollider);
+                this.AddCollider(_sprite as Phaser.Sprite, _isLazyCollider);
+            if (_isPathfindingDeadZone) {
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x - this.data.tileWidth, _sprite.y - this.data.tileHeight));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x, _sprite.y - this.data.tileHeight));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x + this.data.tileWidth, _sprite.y - this.data.tileHeight));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x - this.data.tileWidth, _sprite.y));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x + this.data.tileWidth, _sprite.y));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x - this.data.tileWidth, _sprite.y + this.data.tileHeight));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x, _sprite.y + this.data.tileHeight));
+                this.pathfindingDeadZones.push(new Phaser.Sprite(this.game, _sprite.x + this.data.tileWidth, _sprite.y + this.data.tileHeight));
+            }
+        }
+
+        public ClearPathfindingDeadzones(): void {
+            this.pathfindingDeadZones = [];
         }
 
         public UpdateChunksAround(_cR: number, _cC: number): void {
@@ -140,17 +196,8 @@
             }
         }
 
-        public UpdateCollisionOnChunk(_collider: Phaser.Sprite, _colliderIndex:number, _chunk: TiledChunks.Chunk): void
+        public UpdateCollisionOnChunk(_collider: Phaser.Sprite, _colliderIndex: number, _chunk: TiledChunks.Chunk): void
         {
-            // With other colliders
-            // and sort them in the meantime
-            for (var l: number = 0; l < this.colliders.length; l++) {
-                if (_colliderIndex != l) {
-                    if (this.game.physics.arcade.collide(_collider, this.colliders[l]))
-                        this.OnCollision(_collider, this.colliders[l]);
-                    this.collisionChecks++;
-                }
-            }
 
             // Check collision between collider and tiles.
             var tile: Phaser.Sprite;
@@ -195,11 +242,18 @@
                 else
                     return 0;
             });
-            
+
             var collider: Phaser.Sprite;
 
             for (var i: number = 0; i < this.colliders.length; i++) {
                 collider = this.colliders[i];
+
+                for (var c: number = 0; c < this.colliders.length; c++) {
+                    if (c != i && this.game.physics.arcade.collide(collider, this.colliders[c]) )
+                        this.OnCollision(collider, this.colliders[c])
+                    this.collisionChecks++;
+                }
+
                 var obstacles: any[];
                 var obstacle: any;
                 obstacles = this.quadtree.retrieve(collider);
@@ -429,6 +483,11 @@
             return null;
         }
 
+        public UpdatePathfinding(): void {
+            this.pathfinding.setGrid(this.GetCollisionMatrix());
+            this.ClearPathfindingDeadzones();
+        }
+
         constructor(_game: Phaser.Game, _data: TiledChunks.MapData, _progressCallback?: Function, _progressCallbackContext?: Object)
         {
             // Store varables
@@ -442,7 +501,12 @@
             this.progressCallback = _progressCallback;
             this.progressCallbackContext = _progressCallbackContext;
             this.progressTotal = (_data.chunkRows * _data.chunkColumns) * 2;
-        
+
+
+            this.pathfinding = new EasyStar.js();
+            this.pathfinding.setAcceptableTiles([0]);
+            this.pathfinding.disableDiagonals();
+
             // Colliders
             this.colliders = [];
             this.lazyColliders = [];
@@ -489,6 +553,7 @@
 
             // Updating the map causes it to be drawn...
             this.UpdateMap();
+            this.UpdatePathfinding();
 
         }
     }

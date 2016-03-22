@@ -25,6 +25,22 @@
             id = null;
         }
 
+        public GetTileIDs(_map: TiledChunks.Map): number[][]{
+            var tiles: number[][] = [];
+            var id: number = 0;
+            for (var r: number = 0; r < _map.data.chunkRows * _map.data.chunkTileRows; r++)
+            {
+                tiles[r] = [];
+                for (var c: number = 0; c < _map.data.chunkColumns * _map.data.chunkTileColumns; c++) {
+                    if (this.tileDatas[r] && this.tileDatas[r][c])
+                        tiles[r][c] = this.tileDatas[r][c].id;
+                    else
+                        tiles[r][c] = 0;
+                }
+            }
+            return tiles;
+        }
+
         public GetChunkLayer(_chunk: TiledChunks.Chunk): TiledChunks.ChunkLayer
         {
             var chunkTileDatas: TiledChunks.TileData[][] = [];
