@@ -47,15 +47,15 @@
         {
             return this.GetTilesetForId(_tileID).textureKey;
         }
-
-        // TODO: OPTIMZIE THIS
+        
         public GetTilesetForId(_tileID: number): TiledChunks.Tileset {
             var i: number = 0;
-            while (i < this.tilesets.length) {
-                if (this.tilesets[i].fromID <= _tileID && _tileID < this.tilesets[i].toID) {
-                    return this.tilesets[i];
-                }
+            while (i < this.tilesets.length && !(this.tilesets[i].fromID <= _tileID && _tileID < this.tilesets[i].toID) )
                 i++;
+            if (i < this.tilesets.length)
+                return this.tilesets[i];
+            else {
+                // TODO: Tileset is missing what now?!
             }
         }
 
@@ -68,7 +68,11 @@
         }
 
         public GetFrameForId(_tileID: number): number {
-            return this.GetTilesetForId(_tileID).GetFrameFromId(_tileID);
+            var tileSet: TiledChunks.Tileset = this.GetTilesetForId(_tileID);
+            if (tileSet)
+                return tileSet.GetFrameFromId(_tileID);
+            else
+                return -1;
         }
 
         public CalculateNeededChunkCacheSizes(): void {

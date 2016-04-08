@@ -23,6 +23,10 @@
         progressCallbackContext: Object;
         progressTotal: number;
 
+        public static MAP_EVENT_ON_COLLISION: string = "OnCollision";
+        public static MAP_EVENT_ON_TRIGGER_ENTER: string = "OnTriggerEnter";
+        public static MAP_EVENT_ON_TRIGGER_LEAVE: string = "OnTriggerLeave";
+
         // DEBUG
         triggerChecks: number;
         collisionChecks: number;
@@ -49,19 +53,19 @@
 
         public OnTriggerEnter(_trigger: TiledChunks.Trigger, _collider: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++)
-                if (this.listeners[l].event == "OnTriggerEnter" && this.listeners[l].sprite == _collider)
+                if (this.listeners[l].event == TiledChunks.Map.MAP_EVENT_ON_TRIGGER_ENTER && this.listeners[l].sprite == _collider)
                     this.listeners[l].callback(_trigger, this.listeners[l].callbackContext);
         }
 
         public OnTriggerLeave(_trigger: TiledChunks.Trigger, _collider: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++)
-                if (this.listeners[l].event == "OnTriggerLeave" && this.listeners[l].sprite == _collider)
+                if (this.listeners[l].event == TiledChunks.Map.MAP_EVENT_ON_TRIGGER_LEAVE && this.listeners[l].sprite == _collider)
                     this.listeners[l].callback(_trigger, this.listeners[l].callbackContext);
         }
 
         public OnCollision(_collider: Phaser.Sprite, _other: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++) {
-                if (this.listeners[l].event == "OnCollision") {
+                if (this.listeners[l].event == TiledChunks.Map.MAP_EVENT_ON_COLLISION) {
                     if (this.listeners[l].sprite.name == _collider.name)
                         this.listeners[l].callback(_other, this.listeners[l].callbackContext);
                     if (this.listeners[l].sprite.name == _other.name)
@@ -123,7 +127,7 @@
             return this.layers[i];
         }
 
-        public AddToLayer(_sprite: Phaser.Sprite | Phaser.Group, _layer: string, _isCollider: boolean, _isLazyCollider?: boolean, _isPathfindingDeadZone?: boolean): void {
+        public AddToLayer(_sprite: Phaser.Sprite | Phaser.Group | Phaser.TileSprite, _layer: string, _isCollider: boolean, _isLazyCollider?: boolean, _isPathfindingDeadZone?: boolean): void {
             var layer: MapLayer = this.GetLayer(_layer);
             layer.container.add(_sprite);
             if (_isCollider)
@@ -150,7 +154,7 @@
                 for (var c: number = 0; c < this.chunks[r].length; c++)
                     this.chunks[r][c].PrematureDeactivation();
             
-            this.centerChunk = this.chunks[_cR][_cC];
+            this.centerChunk = this.chunks[_cR] && this.chunks[_cR][_cC];
 
             if (this.centerChunk) {
                 this.centerChunk.Activate();
@@ -200,11 +204,11 @@
         {
 
             // Check collision between collider and tiles.
-            var tile: Phaser.Sprite;
+            var collider: TiledChunks.Collider;
             for (var c: number = 0; c < _chunk.colliders.length; c++) {
-                tile = _chunk.colliders[c];
-                if (this.game.physics.arcade.collide(_collider, tile))
-                    this.OnCollision(_collider, tile);
+                collider = _chunk.colliders[c];
+                if (this.game.physics.arcade.collide(_collider, collider))
+                    this.OnCollision(_collider, collider);
                 this.collisionChecks++;
             }
 
@@ -234,6 +238,7 @@
 
         public UpdateCollisions(): void 
         {
+            // Sort colliders Z index
             this.colliders.sort(function (_a: Phaser.Sprite, _b: Phaser.Sprite) {
                 if (_a.world.y > _b.world.y) {
                     _a.bringToTop();
@@ -245,15 +250,18 @@
 
             var collider: Phaser.Sprite;
 
+            // Check collision between 'Hard' colliders
             for (var i: number = 0; i < this.colliders.length; i++) {
                 collider = this.colliders[i];
 
+                // Check collision between added Collider <-> Collider
                 for (var c: number = 0; c < this.colliders.length; c++) {
                     if (c != i && this.game.physics.arcade.collide(collider, this.colliders[c]) )
                         this.OnCollision(collider, this.colliders[c])
                     this.collisionChecks++;
                 }
 
+                // Check collision between added Collider <-> Map.Collider
                 var obstacles: any[];
                 var obstacle: any;
                 obstacles = this.quadtree.retrieve(collider);
@@ -263,14 +271,19 @@
                         this.OnCollision(collider, obstacle);
                     this.collisionChecks++;
                 }
+
+                // Check collision between added Collider <-> Map.Trigger
+                // TODO: Implement this if needed
             }
 
-            for (var l: number = 0; l < this.lazyColliders.length; l++) {
-                collider = this.lazyColliders[l];
-                this.UpdateCollisionOnChunk(collider,l,this.centerChunk);
-                for (var a: number = 0; a < this.centerChunk.adjacentCollisionChunks.length; a++)
-                    this.UpdateCollisionOnChunk(collider,l,this.centerChunk.adjacentCollisionChunks[a]);
-            }
+            // Check collision for 'Lazy' colliders
+            if (this.centerChunk)
+                for (var l: number = 0; l < this.lazyColliders.length; l++) {
+                    collider = this.lazyColliders[l];
+                    this.UpdateCollisionOnChunk(collider,l,this.centerChunk);
+                    for (var a: number = 0; a < this.centerChunk.adjacentCollisionChunks.length; a++)
+                        this.UpdateCollisionOnChunk(collider,l,this.centerChunk.adjacentCollisionChunks[a]);
+                }
         }
 
         public UpdateMap(): void {
@@ -360,7 +373,6 @@
         }
 
         public GetCachedGraphicalChunks(): number[][][][] {
-            console.log("getting cached graphical chunks");
             var returnChunks: number[][][][] = [];
             var chunk: TiledChunks.Chunk;
             var adjacentChunk: TiledChunks.Chunk;
@@ -375,8 +387,22 @@
                     }
                 }
             }
-            console.log("returning cached graphical chunks");
             return returnChunks;
+        }
+
+        public GetChunk(_x: number, _y: number): TiledChunks.Chunk {
+            // Convert x to a chunkX 
+            var chunkR = Math.floor(_y / (this.data.chunkTileRows * this.data.tileHeight));
+            var chunkC = Math.floor(_x / (this.data.chunkTileColumns * this.data.tileWidth));
+            return this.chunks[chunkR][chunkC];
+        }
+
+        public AddChunkCollider(_collider: TiledChunks.Collider): void {
+            this.GetChunk(_collider.x, _collider.y).AddCollider(_collider);
+        }
+
+        public RemoveChunkCollider(_collider: TiledChunks.Collider): void {
+            this.GetChunk(_collider.x, _collider.y).RemoveCollider(_collider);
         }
 
 
@@ -525,9 +551,9 @@
             {
                 layerData = this.data.layers[l];
                 if (layerData.batch)
-                    layerContainer = new Phaser.SpriteBatch(this.game, this.container, layerData.name);
+                    layerContainer = new Phaser.SpriteBatch(this.game, this.container, layerData.name, false);
                 else
-                    layerContainer = new Phaser.Group(this.game, this.container, layerData.name);
+                    layerContainer = new Phaser.Group(this.game, this.container, layerData.name, false);
                 this.layers.push(new TiledChunks.MapLayer(layerContainer, layerData));
             }
 
@@ -554,6 +580,7 @@
             // Updating the map causes it to be drawn...
             this.UpdateMap();
             this.UpdatePathfinding();
+            _game.world.setBounds(0, 0, this.data.worldWidth, this.data.worldHeight);
 
         }
     }

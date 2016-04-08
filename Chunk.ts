@@ -315,13 +315,28 @@
             }
         }
 
-        public RemoveCollider(_tile: TiledChunks.Tile): void {
+        public RemoveCollider(_collider: TiledChunks.Collider): void {
             var c: number = 0;
-            while (c < this.colliders.length && (this.colliders[c].x + "/"+this.colliders[c].y) != _tile.key)
+            while (c < this.colliders.length && _collider != this.colliders[c])
                 c++;
             if (c < this.colliders.length)
                 this.colliders.splice(c, 1);
         }
+
+        public AddCollider(_collider: TiledChunks.Collider): void {
+            this.colliders.push(_collider);
+            this.map.quadtree.insert(_collider);
+        }
+
+        public GetColliderByTile(_tile: TiledChunks.Tile): TiledChunks.Collider {
+            var c: number = 0;
+            while (c < this.colliders.length && (this.colliders[c].x + "/" + this.colliders[c].y) != _tile.key)
+                c++;
+            if (c < this.colliders.length)
+                return this.colliders[c];
+        }
+
+
 
         constructor(_map: TiledChunks.Map, _row: number, _column: number)
         {
@@ -351,7 +366,6 @@
                     this.AddColliders(chunkLayer, layerData.isTriggerLayer);
                 this.layers.push(chunkLayer);
             }
-            
 
             // Nullify localizations
             // for garbage collection
