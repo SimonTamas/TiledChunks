@@ -14,7 +14,7 @@
 
         public GetPropertyValueFromId(_id: number, _property: string): string {
             var properties: Object = this.GetPropertiesFromId(_id)
-            return properties && properties[_property] || "";
+            return properties && properties[_property];
         }
 
         public GetPropertiesFromId(_id: number): Object {

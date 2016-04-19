@@ -305,7 +305,7 @@
                                 this.map.quadtree.insert(rect);
                             }
 
-                            this.map.game.physics.enable(rect, Phaser.Physics.ARCADE);
+                            this.map.game.physics.arcade.enable(rect);
                             rect.body.setSize(this.map.data.tileWidth, this.map.data.tileHeight, 0, 0);
                             rect.body.immovable = true;
                             rect.name = this.map.data.GetTilesetForId(tileID).GetPropertyValueFromId(tileID, "name");

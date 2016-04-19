@@ -33,11 +33,12 @@
 
         constructor(_game: Phaser.Game, _id: number, _x: number, _y: number) {
 
+            super(_game, _x, _y);
+
             this.colliders = [];
             this.id = _id;
             this.key = "TriggerSprite" + _x + "/" + _y;
-
-            super(_game, _x, _y);
+            
             
         }
     }

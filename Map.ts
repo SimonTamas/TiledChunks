@@ -23,9 +23,9 @@
         progressCallbackContext: Object;
         progressTotal: number;
 
-        public static MAP_EVENT_ON_COLLISION: string = "OnCollision";
-        public static MAP_EVENT_ON_TRIGGER_ENTER: string = "OnTriggerEnter";
-        public static MAP_EVENT_ON_TRIGGER_LEAVE: string = "OnTriggerLeave";
+        public static MAP_EVENT_ON_COLLISION: number = 1;
+        public static MAP_EVENT_ON_TRIGGER_ENTER: number = 2;
+        public static MAP_EVENT_ON_TRIGGER_LEAVE: number = 3;
 
         // DEBUG
         triggerChecks: number;
@@ -36,13 +36,13 @@
         // ----------------------------------- MAP EVENT HANDLING ---------------------------------------
         // ----------------------------------------------------------------------------------------------
 
-        public AddListener(_sprite: Phaser.Sprite, _event: string, _callback: Function, _callbackContext?: Object): void
+        public AddListener(_sprite: Phaser.Sprite, _event: number, _callback: Function, _callbackContext?: Object): void
         {
             this.listeners.push(new TiledChunks.MapListener(_sprite, _event, _callback, _callbackContext));
         }
 
-        
-        public RemoveListener(_sprite: Phaser.Sprite, _event:string): void
+
+        public RemoveListener(_sprite: Phaser.Sprite, _event: number): void
         {
             var i: number = 0;
             while (i < this.listeners.length && this.listeners[i].event != _event || this.listeners[i].sprite !== _sprite)
@@ -391,7 +391,6 @@
         }
 
         public GetChunk(_x: number, _y: number): TiledChunks.Chunk {
-            // Convert x to a chunkX 
             var chunkR = Math.floor(_y / (this.data.chunkTileRows * this.data.tileHeight));
             var chunkC = Math.floor(_x / (this.data.chunkTileColumns * this.data.tileWidth));
             return this.chunks[chunkR][chunkC];
@@ -429,7 +428,7 @@
                 }
             }
             if (!foundLayer)
-                console.log("Could not find any " + _layerName + " named layers");
+                console.warn("TiledChunks.Map: Could not find any " + _layerName + " named layers");
             return returnTiles
         }
 
