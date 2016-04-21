@@ -366,10 +366,6 @@
                     this.AddColliders(chunkLayer, layerData.isTriggerLayer);
                 this.layers.push(chunkLayer);
             }
-
-            // Nullify localizations
-            // for garbage collection
-            layerData = null;
             
             Chunk.chunks++;
         }

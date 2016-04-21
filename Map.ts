@@ -1,5 +1,5 @@
 ﻿module TiledChunks {
-
+    
     export class Map
     {
         game: Phaser.Game;
@@ -11,6 +11,8 @@
         centerChunk: TiledChunks.Chunk;
         cameraChunkRow: number;
         cameraChunkColumn: number;
+        biggestDistance: number;
+        collisionMatrixEnabled: boolean;
 
         listeners: TiledChunks.MapListener[];
         layers: TiledChunks.MapLayer[];
@@ -45,31 +47,41 @@
         public RemoveListener(_sprite: Phaser.Sprite, _event: number): void
         {
             var i: number = 0;
-            while (i < this.listeners.length && this.listeners[i].event != _event || this.listeners[i].sprite !== _sprite)
+            while (i < this.listeners.length && this.listeners[i] && (this.listeners[i].GetEvent() != _event || this.listeners[i].GetSprite() !== _sprite))
                 i++;
-            if (i < this.listeners.length)
-                this.listeners.splice(i, 1);
+            if (i < this.listeners.length) {
+                if (!this.listeners[i]) {
+                    this.listeners.splice(i, 1);
+                    this.RemoveListener(_sprite, _event);
+                }
+                else
+                    this.listeners.splice(i, 1);
+            }
         }
 
         public OnTriggerEnter(_trigger: TiledChunks.Trigger, _collider: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++)
-                if (this.listeners[l].event == TiledChunks.Map.MAP_EVENT_ON_TRIGGER_ENTER && this.listeners[l].sprite == _collider)
-                    this.listeners[l].callback(_trigger, this.listeners[l].callbackContext);
+                if (this.listeners[l].GetEvent() == TiledChunks.Map.MAP_EVENT_ON_TRIGGER_ENTER && this.listeners[l].GetSprite() == _collider)
+                    this.listeners[l].GetCallback()(_trigger, this.listeners[l].GetCallbackContext());
         }
 
         public OnTriggerLeave(_trigger: TiledChunks.Trigger, _collider: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++)
-                if (this.listeners[l].event == TiledChunks.Map.MAP_EVENT_ON_TRIGGER_LEAVE && this.listeners[l].sprite == _collider)
-                    this.listeners[l].callback(_trigger, this.listeners[l].callbackContext);
+                if (this.listeners[l].GetEvent() == TiledChunks.Map.MAP_EVENT_ON_TRIGGER_LEAVE && this.listeners[l].GetSprite() == _collider)
+                    this.listeners[l].GetCallback()(_trigger, this.listeners[l].GetCallbackContext());
         }
 
         public OnCollision(_collider: Phaser.Sprite, _other: Phaser.Sprite): void {
             for (var l: number = 0; l < this.listeners.length; l++) {
-                if (this.listeners[l].event == TiledChunks.Map.MAP_EVENT_ON_COLLISION) {
-                    if (this.listeners[l].sprite.name == _collider.name)
-                        this.listeners[l].callback(_other, this.listeners[l].callbackContext);
-                    if (this.listeners[l].sprite.name == _other.name)
-                        this.listeners[l].callback(_collider, this.listeners[l].callbackContext);
+                if (this.listeners[l].GetEvent() == TiledChunks.Map.MAP_EVENT_ON_COLLISION) {
+
+                    if (this.listeners[l].GetSprite() == _collider)
+                        this.listeners[l].GetCallback()(_other, this.listeners[l].GetCallbackContext(), _collider);
+
+                    // Does the other one still exists? (Very rare case)
+                    if (this.listeners[l])
+                        if (this.listeners[l].GetSprite() == _other)
+                            this.listeners[l].GetCallback()(_collider, this.listeners[l].GetCallbackContext(), _other);
                 }
             }
         }
@@ -77,6 +89,16 @@
         // ----------------------------------------------------------------------------------------------
         // ----------------------------------- MAP EVENT HANDLING ---------------------------------------
         // ----------------------------------------------------------------------------------------------
+
+        public EnableCollisionMatrix(): void {
+            this.collisionMatrixEnabled = true;
+            this.UpdatePathfinding();
+        }
+
+        public DisableCollisionMatrix(): void {
+            this.collisionMatrixEnabled = false;
+            this.UpdatePathfinding();
+        }
 
         public GetCollisionMatrix(): number[][] {
 
@@ -90,31 +112,32 @@
                 for (c = 0; c < this.data.chunkColumns * this.data.chunkTileColumns; c++)
                     returnMatrix[r][c] = 0;
             }
-            
-            for (r=0; r < this.chunks.length; r++) {
-                for (c=0; c < this.chunks[r].length; c++) {
-                    chunk = this.chunks[r][c];
-                    for (var l: number = 0; l < chunk.colliders.length; l++) {
-                        collider = chunk.colliders[l];
-                        returnMatrix[collider.r][collider.c] = 1;
+
+            if (this.collisionMatrixEnabled) {
+                for (r = 0; r < this.chunks.length; r++) {
+                    for (c = 0; c < this.chunks[r].length; c++) {
+                        chunk = this.chunks[r][c];
+                        for (var l: number = 0; l < chunk.colliders.length; l++) {
+                            collider = chunk.colliders[l];
+                            returnMatrix[collider.r][collider.c] = 1;
+                        }
+
                     }
-
                 }
-            }
 
-            for (var c: number = 0; c < this.colliders.length; c++) {
-                if (this.colliders[c].body.immovable) {
-                    r = Math.floor(this.colliders[c].y / this.data.tileHeight);
-                    c = Math.floor(this.colliders[c].x / this.data.tileWidth);
+                for (var c: number = 0; c < this.colliders.length; c++) {
+                    if (this.colliders[c].body.immovable) {
+                        r = Math.floor(this.colliders[c].y / this.data.tileHeight);
+                        c = Math.floor(this.colliders[c].x / this.data.tileWidth);
+                        returnMatrix[r][c] = 1;
+                    }
+                }
+
+                for (var d: number = 0; d < this.pathfindingDeadZones.length; d++) {
+                    r = Math.floor(this.pathfindingDeadZones[d].y / this.data.tileHeight);
+                    c = Math.floor(this.pathfindingDeadZones[d].x / this.data.tileWidth);
                     returnMatrix[r][c] = 1;
                 }
-            }
-
-            for (var d: number = 0; d < this.pathfindingDeadZones.length; d++)
-            {
-                r = Math.floor(this.pathfindingDeadZones[d].y / this.data.tileHeight);
-                c = Math.floor(this.pathfindingDeadZones[d].x / this.data.tileWidth);
-                returnMatrix[r][c] = 1;
             }
 
             return returnMatrix;
@@ -198,6 +221,8 @@
             if (c < this.colliders.length) {
                 this.colliders.splice(c, 1);
             }
+            else
+                console.warn("Could not remove collider");
         }
 
         public UpdateCollisionOnChunk(_collider: Phaser.Sprite, _colliderIndex: number, _chunk: TiledChunks.Chunk): void
@@ -535,6 +560,7 @@
             // Colliders
             this.colliders = [];
             this.lazyColliders = [];
+            this.collisionMatrixEnabled = true;
 
             // For debug
             this.collisionChecks = 0;
@@ -580,6 +606,8 @@
             this.UpdateMap();
             this.UpdatePathfinding();
             _game.world.setBounds(0, 0, this.data.worldWidth, this.data.worldHeight);
+
+            this.biggestDistance = Math.sqrt(Math.pow(this.data.worldWidth, 2) + Math.pow(this.data.worldHeight, 2));
 
         }
     }
