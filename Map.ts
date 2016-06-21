@@ -218,12 +218,10 @@
             var c: number = 0;
             while (c < this.colliders.length && this.colliders[c] !== _collider)
                 c++;
-            if (c < this.colliders.length) {
+            if (c < this.colliders.length) 
                 this.colliders.splice(c, 1);
-            }
-            else
-                console.warn("Could not remove collider");
         }
+        
 
         public UpdateCollisionOnChunk(_collider: Phaser.Sprite, _colliderIndex: number, _chunk: TiledChunks.Chunk): void
         {
@@ -241,7 +239,7 @@
             for (var t: number = 0; t < _chunk.triggers.length; t++) {
                 this.triggerChecks++;
                 trigger = _chunk.triggers[t];
-                if (this.game.physics.arcade.overlap(_collider, trigger)) {
+                if (this.game.physics.arcade.intersects(_collider.body, trigger.body)) {
                     if (!trigger.HasCollider(_collider)) {
                         // A collider will only enter a trigger
                         // if it is not colliding with any other simmilar triggers
@@ -254,8 +252,9 @@
                     trigger.RemoveCollider(_collider);
                     // A collider will only leave a trigger
                     // if it no longer collides with any other simmilar triggers
-                    if (!this.IsCollidingWithSimmilarTrigger(_collider, trigger, _chunk))
+                    if (!this.IsCollidingWithSimmilarTrigger(_collider, trigger, _chunk)) {
                         this.OnTriggerLeave(trigger, _collider);
+                    }
                 }
             }
         }
@@ -540,6 +539,7 @@
 
         constructor(_game: Phaser.Game, _data: TiledChunks.MapData, _progressCallback?: Function, _progressCallbackContext?: Object)
         {
+
             // Store varables
             this.game = _game;
             this.data = _data;
@@ -599,8 +599,10 @@
             // around it, we cache them so
             // we dont have to calculate it later
             
+            
             this.CacheAdjacentGraphicalChunks();
             this.CacheAdjacentCollisionChunks();
+            
 
             // Updating the map causes it to be drawn...
             this.UpdateMap();
